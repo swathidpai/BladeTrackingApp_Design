@@ -20,7 +20,6 @@ import { AttentionBanner } from "./components/planner/AttentionBanner";
 import { DayColumn } from "./components/planner/DayColumn";
 import { JobCard } from "./components/planner/JobCard";
 import { JobModal } from "./components/modals/JobModal";
-import { CancelReasonModal } from "./components/modals/CancelReasonModal";
 import { DayConfirmModal } from "./components/modals/DayConfirmModal";
 import { StatusModal } from "./components/modals/StatusModal";
 import { ResolveScreen } from "./components/resolve/ResolveScreen";
@@ -41,8 +40,7 @@ export default function App() {
 
   // Modals
   const [jobModal, setJobModal] = useState<{ day: string; job?: Job } | null>(null);
-  const [cancelModal, setCancelModal] = useState<Job | null>(null);
-  const [statusModal, setStatusModal] = useState<Job | null>(null);
+  const [statusModal, setStatusModal] = useState<{ job: Job; initialBranch?: JobStatus } | null>(null);
   const [dayModal, setDayModal] = useState<{ day: string; mode: "complete" | "cancel" } | null>(null);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
@@ -64,21 +62,23 @@ export default function App() {
 
   function handleStatus(job: Job, status: JobStatus) {
     if (status === "cancelled") {
-      setCancelModal(job);
+      setStatusModal({ job, initialBranch: "cancelled" });
       return;
     }
     updateJob(job.id, { status, cancelReasons: status === "planned" ? [] : job.cancelReasons });
   }
 
   // Unified status modal (opened from a card's status button).
-  function saveStatus(patch: Partial<Job>, status: JobStatus) {
+  function saveStatus(patch: Partial<Job>, status: JobStatus, opts?: { closeWorkOrder?: boolean }) {
     if (!statusModal) return;
     const before = jobs;
-    updateJob(statusModal.id, patch);
-    const name = statusModal.name;
+    updateJob(statusModal.job.id, patch);
+    const name = patch.name ?? statusModal.job.name;
     const message =
       status === "complete"
-        ? `${name} marked successful`
+        ? opts?.closeWorkOrder
+          ? `${name} marked successful — work order closed`
+          : `${name} marked successful`
         : status === "cancelled"
           ? `${name} cancelled`
           : `${name} set to planned`;
@@ -111,14 +111,6 @@ export default function App() {
     });
     pushToast(isEdit ? "Job saved" : "Job created");
     setJobModal(null);
-  }
-
-  function confirmCancel(reasons: string[], patch: Partial<Job>) {
-    if (cancelModal) {
-      updateJob(cancelModal.id, { ...patch, status: "cancelled", cancelReasons: reasons });
-      pushToast("Job cancelled");
-    }
-    setCancelModal(null);
   }
 
   function confirmDay(reasons: string[]) {
@@ -221,7 +213,7 @@ export default function App() {
             jobs={jobs}
             onBack={() => setView("planner")}
             onStatus={handleStatus}
-            onSetStatus={(job) => setStatusModal(job)}
+            onSetStatus={(job) => setStatusModal({ job })}
             onDuplicate={duplicateJob}
             onDelete={deleteJob}
             onMarkAllComplete={(d) => setDayModal({ day: d, mode: "complete" })}
@@ -260,10 +252,10 @@ export default function App() {
                   onAddJob={(d) => setJobModal({ day: d })}
                   onMarkAllComplete={(d) => setDayModal({ day: d, mode: "complete" })}
                   onCancelAll={(d) => setDayModal({ day: d, mode: "cancel" })}
-                  onSetStatus={(job) => setStatusModal(job)}
+                  onSetStatus={(job) => setStatusModal({ job })}
                   onDuplicate={duplicateJob}
                   onDelete={deleteJob}
-                  onReasonClick={(job) => setCancelModal(job)}
+                  onReasonClick={(job) => setStatusModal({ job })}
                   onLinkWorkOrder={(job) => setJobModal({ day: job.day, job })}
                 />
               ))}
@@ -295,16 +287,10 @@ export default function App() {
       )}
       {statusModal && (
         <StatusModal
-          job={statusModal}
+          job={statusModal.job}
+          initialBranch={statusModal.initialBranch}
           onClose={() => setStatusModal(null)}
           onSave={saveStatus}
-        />
-      )}
-      {cancelModal && (
-        <CancelReasonModal
-          job={cancelModal}
-          onClose={() => setCancelModal(null)}
-          onConfirm={confirmCancel}
         />
       )}
       {dayModal && (

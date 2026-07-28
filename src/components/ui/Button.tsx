@@ -1,6 +1,6 @@
 import { ButtonHTMLAttributes } from "react";
 
-type Variant = "primary" | "ghost" | "danger" | "success";
+type Variant = "primary" | "ghost" | "danger" | "success" | "success-outline";
 
 interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant;
@@ -13,6 +13,8 @@ const styles: Record<Variant, string> = {
     "bg-transparent text-text-secondary hover:text-text-primary hover:bg-surface-active border border-border-default",
   danger: "bg-attention text-white hover:brightness-110 border border-transparent",
   success: "bg-success text-bg-base hover:brightness-110 border border-transparent",
+  "success-outline":
+    "bg-transparent text-success border border-success hover:bg-success/10",
 };
 
 export function Button({ variant = "primary", className = "", children, ...rest }: Props) {

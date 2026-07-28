@@ -1,8 +1,8 @@
 import {
   Check,
+  ChevronDown,
   Copy,
   GripVertical,
-  Minus,
   Trash2,
   X,
   ClipboardList,
@@ -36,13 +36,28 @@ function surfaceStyle(job: Job) {
   return "border-border-default bg-surface-raised";
 }
 
-// The single status button reflects the current status by glyph + colour.
-function statusGlyph(job: Job) {
+// The single status control reflects the current status by label, glyph and colour.
+function statusControl(job: Job) {
   if (job.status === "complete")
-    return { icon: Check, color: "var(--color-success)", tip: "Successful — set status" };
+    return {
+      label: "Successful",
+      icon: Check,
+      tip: "Successful — change status",
+      className: "border-success bg-success/20 text-success",
+    };
   if (job.status === "cancelled")
-    return { icon: X, color: "var(--color-cancelled)", tip: "Cancelled — set status" };
-  return { icon: Minus, color: "var(--color-text-muted)", tip: "Set status" };
+    return {
+      label: "Cancelled",
+      icon: X,
+      tip: "Cancelled — change status",
+      className: "border-cancelled bg-cancelled/20 text-cancelled",
+    };
+  return {
+    label: "Set status",
+    icon: ChevronDown,
+    tip: "Set status",
+    className: "border-border-default bg-surface-raised text-text-secondary hover:text-text-primary",
+  };
 }
 
 export function JobCard({
@@ -61,7 +76,7 @@ export function JobCard({
 }: Props) {
   const attention = needsAttention(job);
   const missing = missingFields(job);
-  const status = statusGlyph(job);
+  const status = statusControl(job);
   const StatusIcon = status.icon;
 
   return (
@@ -147,11 +162,11 @@ export function JobCard({
           <button
             type="button"
             onClick={onSetStatus}
-            style={{ borderColor: status.color, color: status.color }}
-            className="flex h-7 w-7 items-center justify-center rounded-[4px] border transition hover:brightness-110"
-            aria-label="Set status"
+            className={`flex h-7 items-center gap-1 whitespace-nowrap rounded-[4px] border px-2 text-[13px] font-medium transition hover:brightness-110 ${status.className}`}
+            aria-label={status.label}
           >
-            <StatusIcon size={15} strokeWidth={2.5} />
+            {status.label}
+            <StatusIcon size={13} strokeWidth={2.5} />
           </button>
         </Tooltip>
         <div className="flex items-center gap-1">

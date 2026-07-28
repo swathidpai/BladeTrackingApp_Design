@@ -72,10 +72,21 @@ export function Dropdown({ value, options, onChange, placeholder = "Select…", 
   );
 }
 
-export function Field({ label, children }: { label: string; children: ReactNode }) {
+export function Field({
+  label,
+  right,
+  children,
+}: {
+  label: string;
+  right?: ReactNode;
+  children: ReactNode;
+}) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-[13px] font-medium text-text-primary">{label}</span>
+      <span className="mb-1.5 flex items-center justify-between">
+        <span className="text-[13px] font-medium text-text-primary">{label}</span>
+        {right}
+      </span>
       {children}
     </label>
   );

@@ -8,9 +8,18 @@ interface Props {
   onClose: () => void;
   children: ReactNode;
   footer: ReactNode;
+  footerAlign?: "end" | "between";
 }
 
-export function Modal({ title, subtitle, width = 560, onClose, children, footer }: Props) {
+export function Modal({
+  title,
+  subtitle,
+  width = 560,
+  onClose,
+  children,
+  footer,
+  footerAlign = "end",
+}: Props) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     document.addEventListener("keydown", onKey);
@@ -43,7 +52,11 @@ export function Modal({ title, subtitle, width = 560, onClose, children, footer 
           </button>
         </div>
         <div className="space-y-5 px-6 py-6">{children}</div>
-        <div className="flex items-center justify-end gap-2 border-t border-border-default px-6 py-4">
+        <div
+          className={`flex items-center gap-2 border-t border-border-default px-6 py-4 ${
+            footerAlign === "between" ? "justify-between" : "justify-end"
+          }`}
+        >
           {footer}
         </div>
       </div>
