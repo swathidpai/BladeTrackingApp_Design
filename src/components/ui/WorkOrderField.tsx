@@ -1,4 +1,5 @@
-import { JobType, WORK_ORDERS } from "../../data";
+import { JobType } from "../../data";
+import { useStore } from "../../store";
 import { Dropdown, Field, TextInput } from "./Dropdown";
 
 interface Props {
@@ -15,14 +16,16 @@ interface Props {
  * number still reads as linked rather than looking cleared.
  */
 export function WorkOrderField({ workOrder, onChange, workType }: Props) {
-  const linked = workOrder ? WORK_ORDERS.find((w) => w.number === workOrder) : undefined;
-  const byType = workType ? WORK_ORDERS.filter((w) => w.type === workType) : WORK_ORDERS;
-  const pool = linked && !byType.includes(linked) ? [linked, ...byType] : byType.length ? byType : WORK_ORDERS;
+  const workOrders = useStore((s) => s.workOrders);
+  const linked = workOrder ? workOrders.find((w) => w.number === workOrder) : undefined;
+  const byType = workType ? workOrders.filter((w) => w.type === workType) : workOrders;
+  const pool =
+    linked && !byType.includes(linked) ? [linked, ...byType] : byType.length ? byType : workOrders;
 
   const options = pool.map((w) => ({
     value: w.number,
-    label: `${w.number} — ${w.description}`,
-    description: w.turbine,
+    label: `${w.number} — ${w.name}`,
+    description: w.asset,
   }));
 
   return (
@@ -30,7 +33,7 @@ export function WorkOrderField({ workOrder, onChange, workType }: Props) {
       <Field label="SAP work order number">
         <TextInput
           value={workOrder ?? ""}
-          onChange={(e) => onChange(e.target.value.replace(/\D/g, "").slice(0, 8) || null)}
+          onChange={(e) => onChange(e.target.value.replace(/\D/g, "") || null)}
           placeholder="e.g. 40021874"
           inputMode="numeric"
         />

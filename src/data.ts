@@ -19,11 +19,45 @@ export interface Job {
   originalDay: string; // day it was first scheduled (for resolve backlog grouping)
 }
 
+export type WorkOrderStatus = "open" | "complete";
+export type WorkOrderSource = "import" | "manual";
+
 export interface WorkOrder {
+  id: string;
   number: string;
-  description: string;
-  turbine: string;
-  type: JobType; // drives the "related work orders" match on the selected job type
+  name: string; // SAP short text / description
+  functionalLocation: string;
+  asset: string;
+  subAsset: string;
+  type?: JobType; // inferred from the name; drives the "related work orders" match
+  status: WorkOrderStatus;
+  source: WorkOrderSource;
+  createdAt: string; // ISO
+}
+
+/** Best-effort guess at a work order's job type from its name, for the linker match. */
+export function inferJobType(name: string): JobType | undefined {
+  const s = name.toLowerCase();
+  if (s.includes("tip")) return "Blade Tip Repair";
+  if (s.includes("paint") || s.includes("recoat") || s.includes("coat")) return "Blade Painting";
+  if (s.includes("tower")) return "Tower Cleaning";
+  if (s.includes("blade")) return "Blade Repair";
+  return undefined;
+}
+
+const SUB_ASSET_CODES: Record<string, string> = {
+  "Blade A": "MDA11",
+  "Blade B": "MDA12",
+  "Blade C": "MDA13",
+  Tower: "MDA20",
+  Nacelle: "MDA30",
+  Hub: "MDA40",
+};
+
+/** A plausible SAP-style functional location, suggested (and editable) when adding a work order. */
+export function suggestFunctionalLocation(asset: string, subAsset: string) {
+  const code = SUB_ASSET_CODES[subAsset] ?? "MDA00";
+  return `GBCMA.ROB01WF.G${asset}.${code}`;
 }
 
 export interface WorkTypeDefaults {
@@ -65,16 +99,47 @@ export const SUB_ASSETS = ["Blade A", "Blade B", "Blade C", "Tower", "Nacelle", 
 
 export const REASONS = ["Wind", "Fog", "Rain", "Lightning", "Humidity", "Gust", "Wave Height"];
 
+let woN = 0;
+const woUid = () => `wo-seed-${++woN}`;
+
+function seedWorkOrder(
+  number: string,
+  name: string,
+  asset: string,
+  subAsset: string,
+  opts: { status?: WorkOrderStatus; source?: WorkOrderSource } = {},
+): WorkOrder {
+  return {
+    id: woUid(),
+    number,
+    name,
+    asset,
+    subAsset,
+    functionalLocation: suggestFunctionalLocation(asset, subAsset),
+    type: inferJobType(name),
+    status: opts.status ?? "open",
+    source: opts.source ?? "manual",
+    createdAt: "2025-07-15T09:00:00.000Z",
+  };
+}
+
 export const WORK_ORDERS: WorkOrder[] = [
-  { number: "40021874", description: "Blade C trailing edge crack", turbine: "C4", type: "Blade Repair" },
-  { number: "40021912", description: "Leading edge erosion survey", turbine: "D2", type: "Blade Repair" },
-  { number: "40022003", description: "Tower base corrosion clean", turbine: "A11", type: "Tower Cleaning" },
-  { number: "40022155", description: "Blade A lightning strike check", turbine: "B6", type: "Blade Repair" },
-  { number: "40022210", description: "Recoat blade B outboard", turbine: "C7", type: "Blade Painting" },
-  { number: "40022288", description: "Blade C repair follow-up", turbine: "C4", type: "Blade Repair" },
-  { number: "40022351", description: "Blade B tip erosion repair", turbine: "D2", type: "Blade Tip Repair" },
-  { number: "40022410", description: "Tower wash-down inspection", turbine: "B6", type: "Tower Cleaning" },
-  { number: "40022455", description: "Blade C recoat leading edge", turbine: "C7", type: "Blade Painting" },
+  seedWorkOrder("40021874", "Blade C trailing edge crack", "C4", "Blade C"),
+  seedWorkOrder("40021912", "Leading edge erosion survey", "D2", "Blade A"),
+  seedWorkOrder("40022003", "Tower base corrosion clean", "A11", "Tower"),
+  seedWorkOrder("40022155", "Blade A lightning strike check", "B6", "Blade A"),
+  seedWorkOrder("40022210", "Recoat blade B outboard", "C7", "Blade B"),
+  seedWorkOrder("40022288", "Blade C repair follow-up", "C4", "Blade C"),
+  seedWorkOrder("40022351", "Blade B tip erosion repair", "D2", "Blade B"),
+  seedWorkOrder("40022410", "Tower wash-down inspection", "B6", "Tower"),
+  seedWorkOrder("40022455", "Blade C recoat leading edge", "C7", "Blade C"),
+  seedWorkOrder("24000155879", "GEV: 15 P1 Blade A Repair 2026", "A2", "Blade A", { source: "import" }),
+  seedWorkOrder("24000156044", "GEV: 12 P1 Blade C Repair 2026", "D6", "Blade C", { source: "import" }),
+  seedWorkOrder("24000156087", "GEV: 23 P1 Blade B Repair 2026", "E2", "Blade B", { source: "import" }),
+  seedWorkOrder("24000156090", "GEV: 26 P1 Blade C Repair 2026", "F5", "Blade C", {
+    source: "import",
+    status: "complete",
+  }),
 ];
 
 // Deterministic "today" so the mock is consistent across screens.
@@ -167,6 +232,23 @@ export const SEED_JOBS: Job[] = [
   },
 ];
 
+// Collision-safe id generator for anything created at runtime (jobs, work
+// orders). The seed data above uses its own incrementing counters, which is
+// fine since they only ever run once per module load — but state now
+// persists to localStorage, so a counter that resets to 0 on every reload
+// would eventually mint an id that already exists in the persisted data.
+function uniqueId(prefix: string) {
+  const rand =
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  return `${prefix}-${rand}`;
+}
+
 export function nextId() {
-  return uid();
+  return uniqueId("job");
+}
+
+export function nextWorkOrderId() {
+  return uniqueId("wo");
 }

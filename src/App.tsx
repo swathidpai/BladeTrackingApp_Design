@@ -11,8 +11,9 @@ import {
   type DragStartEvent,
 } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
-import { Job, JobStatus, SEED_JOBS, nextId } from "./data";
+import { Job, JobStatus, nextId } from "./data";
 import { fullDayName, dateNumber, monthName, needsAttention, weekWindow } from "./utils";
+import { useStore } from "./store";
 import { NavRail } from "./components/layout/NavRail";
 import { TopBar } from "./components/layout/TopBar";
 import { PlannerHeader } from "./components/planner/PlannerHeader";
@@ -23,14 +24,16 @@ import { JobModal } from "./components/modals/JobModal";
 import { DayConfirmModal } from "./components/modals/DayConfirmModal";
 import { StatusModal } from "./components/modals/StatusModal";
 import { ResolveScreen } from "./components/resolve/ResolveScreen";
+import { WorkOrdersPage } from "./components/workorders/WorkOrdersPage";
 import { ToastStack, type ToastData } from "./components/ui/Toast";
 
-type View = "planner" | "resolve";
+type View = "planner" | "resolve" | "workorders";
 
 let toastSeq = 0;
 
 export default function App() {
-  const [jobs, setJobs] = useState<Job[]>(SEED_JOBS);
+  const jobs = useStore((s) => s.jobs);
+  const setJobs = useStore((s) => s.setJobs);
   const [view, setView] = useState<View>("planner");
   const [weekOffset, setWeekOffset] = useState(0);
   const weekDays = useMemo(() => weekWindow(weekOffset), [weekOffset]);
@@ -204,11 +207,16 @@ export default function App() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-bg-base text-text-primary">
-      <NavRail />
+      <NavRail
+        view={view === "resolve" ? "planner" : view}
+        onNavigate={(v) => setView(v)}
+      />
       <div className="flex min-w-0 flex-1 flex-col">
         <TopBar />
 
-        {view === "resolve" ? (
+        {view === "workorders" ? (
+          <WorkOrdersPage onGoToPlanner={() => setView("planner")} />
+        ) : view === "resolve" ? (
           <ResolveScreen
             jobs={jobs}
             onBack={() => setView("planner")}

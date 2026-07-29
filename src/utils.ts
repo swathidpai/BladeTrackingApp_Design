@@ -28,6 +28,11 @@ export function weekWindow(offsetWeeks: number) {
   return Array.from({ length: 7 }, (_, i) => addDays(TODAY, -1 + offsetWeeks * 7 + i));
 }
 
+/** Seven-day window starting today, paged by whole weeks — used by the Work Orders calendar. */
+export function todayWindow(offsetWeeks: number) {
+  return Array.from({ length: 7 }, (_, i) => addDays(TODAY, offsetWeeks * 7 + i));
+}
+
 export function dayName(key: string) {
   return DAY_NAMES[parse(key).getDay()];
 }
