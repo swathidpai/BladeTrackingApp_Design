@@ -215,7 +215,7 @@ export default function App() {
         <TopBar />
 
         {view === "workorders" ? (
-          <WorkOrdersPage onGoToPlanner={() => setView("planner")} />
+          <WorkOrdersPage />
         ) : view === "resolve" ? (
           <ResolveScreen
             jobs={jobs}

@@ -10,15 +10,14 @@ import { ToastStack, type ToastData } from "../ui/Toast";
 import { WorkOrderCalendar } from "./WorkOrderCalendar";
 import { WorkOrderList } from "./WorkOrderList";
 import { AddWorkOrderModal } from "./AddWorkOrderModal";
-import { ImportWorkOrdersModal } from "./ImportWorkOrdersModal";
+import { ImportWizard } from "./ImportWizard";
 
-interface Props {
-  onGoToPlanner: () => void;
-}
+type Mode = "list" | "import";
 
 let toastSeq = 0;
 
-export function WorkOrdersPage({ onGoToPlanner }: Props) {
+export function WorkOrdersPage() {
+  const [mode, setMode] = useState<Mode>("list");
   const jobs = useStore((s) => s.jobs);
   const workOrders = useStore((s) => s.workOrders);
   const addJob = useStore((s) => s.addJob);
@@ -30,7 +29,6 @@ export function WorkOrdersPage({ onGoToPlanner }: Props) {
 
   const [weekOffset, setWeekOffset] = useState(0);
   const days = useMemo(() => todayWindow(weekOffset), [weekOffset]);
-  const [importOpen, setImportOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<WorkOrder | null>(null);
   const [toasts, setToasts] = useState<ToastData[]>([]);
@@ -120,45 +118,49 @@ export function WorkOrdersPage({ onGoToPlanner }: Props) {
 
   return (
     <DndContext sensors={sensors} onDragEnd={onDragEnd}>
-      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto scroll-slim">
-        <div className="flex items-center justify-between px-6 py-6">
-          <h1 className="text-[28px] font-medium leading-none tracking-[-0.2px] text-text-primary">
-            Work Orders
-          </h1>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" onClick={() => setImportOpen(true)}>
-              <Upload size={15} /> Import work orders
-            </Button>
-            <Button variant="primary" onClick={() => setAddOpen(true)}>
-              <Plus size={15} /> New work order
-            </Button>
-          </div>
-        </div>
-
-        <WorkOrderCalendar
-          days={days}
-          jobsByDay={jobsByDay}
-          onStep={(weeks) => setWeekOffset((o) => o + weeks)}
-          onToday={() => setWeekOffset(0)}
-          onDeleteJob={deleteJobFromCalendar}
-        />
-
-        <WorkOrderList
-          workOrders={workOrders}
-          onToggleStatus={(wo) => {
-            toggleWorkOrderStatus(wo.id);
-            pushToast(wo.status === "open" ? `${wo.name} marked complete` : `${wo.name} reopened`);
+      {mode === "import" ? (
+        <ImportWizard
+          onBack={() => setMode("list")}
+          onImported={(count) => {
+            setMode("list");
+            pushToast(`${count} work order${count === 1 ? "" : "s"} imported`);
           }}
-          onDelete={setDeleteTarget}
         />
-      </div>
+      ) : (
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto scroll-slim">
+          <div className="flex items-center justify-between px-6 py-6">
+            <h1 className="text-[28px] font-medium leading-none tracking-[-0.2px] text-text-primary">
+              Work Orders
+            </h1>
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" onClick={() => setMode("import")}>
+                <Upload size={15} /> Import work orders
+              </Button>
+              <Button variant="primary" onClick={() => setAddOpen(true)}>
+                <Plus size={15} /> New work order
+              </Button>
+            </div>
+          </div>
 
-      {importOpen && (
-        <ImportWorkOrdersModal
-          onClose={() => setImportOpen(false)}
-          onGoToPlanner={onGoToPlanner}
-        />
+          <WorkOrderCalendar
+            days={days}
+            jobsByDay={jobsByDay}
+            onStep={(weeks) => setWeekOffset((o) => o + weeks)}
+            onToday={() => setWeekOffset(0)}
+            onDeleteJob={deleteJobFromCalendar}
+          />
+
+          <WorkOrderList
+            workOrders={workOrders}
+            onToggleStatus={(wo) => {
+              toggleWorkOrderStatus(wo.id);
+              pushToast(wo.status === "open" ? `${wo.name} marked complete` : `${wo.name} reopened`);
+            }}
+            onDelete={setDeleteTarget}
+          />
+        </div>
       )}
+
       {addOpen && <AddWorkOrderModal onClose={() => setAddOpen(false)} />}
       {deleteTarget && (
         <Modal

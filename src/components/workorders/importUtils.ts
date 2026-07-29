@@ -1,24 +1,19 @@
 import * as XLSX from "xlsx";
 import { WorkOrder, WorkOrderSource, WorkOrderStatus, inferJobType } from "../../data";
+import { deriveFromFunctionalLocation } from "./deriveAsset";
 
-export type MappableField = "number" | "name" | "functionalLocation" | "asset" | "subAsset";
-
-export const REQUIRED_FIELDS: MappableField[] = ["number", "name"];
+export type MappableField = "name" | "number" | "functionalLocation";
 
 export const FIELD_LABELS: Record<MappableField, string> = {
+  name: "Work order name",
   number: "Work order number",
-  name: "Name / short text",
   functionalLocation: "Functional location",
-  asset: "Asset",
-  subAsset: "Sub-asset",
 };
 
 const FIELD_PATTERNS: Record<MappableField, RegExp[]> = {
-  number: [/work\s*order\s*number/i, /wo\s*number/i, /order\s*number/i, /^number$/i, /^order$/i],
-  name: [/short\s*text/i, /description/i, /work\s*order\s*name/i, /^name$/i, /^title$/i],
+  name: [/^description$/i, /operation\s*short\s*text/i, /short\s*text/i, /description/i, /^name$/i],
+  number: [/^order$/i, /work\s*order\s*number/i, /order\s*number/i],
   functionalLocation: [/functional\s*location/i, /floc/i, /func\.?\s*loc/i],
-  asset: [/^asset$/i, /equipment/i, /^asset\b/i],
-  subAsset: [/sub[\s-]?asset/i, /component/i],
 };
 
 export type Mapping = Partial<Record<MappableField, string>>; // field -> source column header
@@ -30,11 +25,11 @@ export interface ParsedWorkbook {
 
 export class ImportError extends Error {}
 
-/** Reads the first sheet of an uploaded .xlsx/.xls file into headers + string rows. */
+/** Reads an uploaded .xlsx/.xls/.csv file into headers + string rows. Prefers a sheet named "Data". */
 export async function parseWorkbookFile(file: File): Promise<ParsedWorkbook> {
   const name = file.name.toLowerCase();
-  if (!name.endsWith(".xlsx") && !name.endsWith(".xls")) {
-    throw new ImportError("That's not an Excel file — please upload a .xlsx or .xls file.");
+  if (![".xlsx", ".xls", ".csv"].some((ext) => name.endsWith(ext))) {
+    throw new ImportError("That's not a spreadsheet — please upload a .xlsx, .xls or .csv file.");
   }
 
   const buffer = await file.arrayBuffer();
@@ -42,10 +37,11 @@ export async function parseWorkbookFile(file: File): Promise<ParsedWorkbook> {
   try {
     workbook = XLSX.read(buffer, { type: "array" });
   } catch {
-    throw new ImportError("Couldn't read that file — it may be corrupted or not a real Excel file.");
+    throw new ImportError("Couldn't read that file — it may be corrupted or not a real spreadsheet.");
   }
 
-  const sheetName = workbook.SheetNames[0];
+  const sheetName =
+    workbook.SheetNames.find((n) => n.toLowerCase() === "data") ?? workbook.SheetNames[0];
   if (!sheetName) throw new ImportError("That workbook has no sheets.");
   const sheet = workbook.Sheets[sheetName];
 
@@ -65,9 +61,6 @@ export function autoDetectMapping(headers: string[]): Mapping {
     const match = headers.find((h) => patterns.some((p) => p.test(h)));
     if (match) mapping[field] = match;
   }
-  // Short text / description often share a source column; if description matched
-  // and name didn't get a distinct column, this still works since both patterns
-  // target the same `name` field.
   return mapping;
 }
 
@@ -85,7 +78,7 @@ export interface ImportPreview {
   duplicateNumbers: string[]; // numbers excluded because they already exist or repeat in this file
 }
 
-/** Applies the confirmed mapping to raw rows, validating and de-duplicating. */
+/** Applies the confirmed mapping to raw rows, deriving asset/sub-asset and de-duplicating. */
 export function buildPreview(
   rows: Record<string, string>[],
   mapping: Mapping,
@@ -108,13 +101,9 @@ export function buildPreview(
       continue;
     }
     seenInFile.add(number);
-    toImport.push({
-      number,
-      name,
-      functionalLocation: mapping.functionalLocation ? row[mapping.functionalLocation]?.trim() ?? "" : "",
-      asset: mapping.asset ? row[mapping.asset]?.trim() ?? "" : "",
-      subAsset: mapping.subAsset ? row[mapping.subAsset]?.trim() ?? "" : "",
-    });
+    const functionalLocation = mapping.functionalLocation ? row[mapping.functionalLocation]?.trim() ?? "" : "";
+    const { asset, subAsset } = deriveFromFunctionalLocation(functionalLocation);
+    toImport.push({ number, name, functionalLocation, asset, subAsset });
   }
 
   return { toImport, skippedMissingFields, duplicateNumbers };
