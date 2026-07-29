@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from "react";
+import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import {
   DndContext,
   DragOverlay,
@@ -25,16 +26,15 @@ import { DayConfirmModal } from "./components/modals/DayConfirmModal";
 import { StatusModal } from "./components/modals/StatusModal";
 import { ResolveScreen } from "./components/resolve/ResolveScreen";
 import { WorkOrdersPage } from "./components/workorders/WorkOrdersPage";
+import { ImportWizard } from "./components/workorders/ImportWizard";
 import { ToastStack, type ToastData } from "./components/ui/Toast";
-
-type View = "planner" | "resolve" | "workorders";
 
 let toastSeq = 0;
 
 export default function App() {
+  const navigate = useNavigate();
   const jobs = useStore((s) => s.jobs);
   const setJobs = useStore((s) => s.setJobs);
-  const [view, setView] = useState<View>("planner");
   const [weekOffset, setWeekOffset] = useState(0);
   const weekDays = useMemo(() => weekWindow(weekOffset), [weekOffset]);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -207,82 +207,101 @@ export default function App() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-bg-base text-text-primary">
-      <NavRail
-        view={view === "resolve" ? "planner" : view}
-        onNavigate={(v) => setView(v)}
-      />
+      <NavRail />
       <div className="flex min-w-0 flex-1 flex-col">
         <TopBar />
 
-        {view === "workorders" ? (
-          <WorkOrdersPage />
-        ) : view === "resolve" ? (
-          <ResolveScreen
-            jobs={jobs}
-            onBack={() => setView("planner")}
-            onStatus={handleStatus}
-            onSetStatus={(job) => setStatusModal({ job })}
-            onDuplicate={duplicateJob}
-            onDelete={deleteJob}
-            onMarkAllComplete={(d) => setDayModal({ day: d, mode: "complete" })}
-            onCancelAll={(d) => setDayModal({ day: d, mode: "cancel" })}
-            onReschedule={(job, day, time) => {
-              const snap = jobs;
-              updateJob(job.id, { day });
-              pushToast(
-                `${job.name} moved to ${fullDayName(day)} ${dateNumber(day)} ${monthName(day)}, ${time}`,
-                () => setJobs(snap),
-              );
-            }}
-          />
-        ) : (
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCorners}
-            onDragStart={onDragStart}
-            onDragOver={onDragOver}
-            onDragEnd={onDragEnd}
-          >
-            <PlannerHeader
-              days={weekDays}
-              onStep={(weeks) => setWeekOffset((o) => o + weeks)}
-              onToday={() => setWeekOffset(0)}
-            />
-            <AttentionBanner count={attentionCount} onResolve={() => setView("resolve")} />
-
-            <div className="flex min-h-0 flex-1">
-              {weekDays.map((day) => (
-                <DayColumn
-                  key={day}
-                  dayKey={day}
-                  jobs={jobs.filter((j) => j.day === day)}
-                  activeId={activeId}
-                  onAddJob={(d) => setJobModal({ day: d })}
-                  onMarkAllComplete={(d) => setDayModal({ day: d, mode: "complete" })}
-                  onCancelAll={(d) => setDayModal({ day: d, mode: "cancel" })}
-                  onSetStatus={(job) => setStatusModal({ job })}
-                  onDuplicate={duplicateJob}
-                  onDelete={deleteJob}
-                  onReasonClick={(job) => setStatusModal({ job })}
-                  onLinkWorkOrder={(job) => setJobModal({ day: job.day, job })}
+        <Routes>
+          <Route path="/" element={<Navigate to="/planner" replace />} />
+          <Route
+            path="/planner"
+            element={
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCorners}
+                onDragStart={onDragStart}
+                onDragOver={onDragOver}
+                onDragEnd={onDragEnd}
+              >
+                <PlannerHeader
+                  days={weekDays}
+                  onStep={(weeks) => setWeekOffset((o) => o + weeks)}
+                  onToday={() => setWeekOffset(0)}
                 />
-              ))}
-            </div>
+                <AttentionBanner count={attentionCount} onResolve={() => navigate("/resolve")} />
 
-            <DragOverlay>
-              {activeJob && (
-                <div className="rotate-2 opacity-95 shadow-2xl">
-                  <JobCard
-                    job={activeJob}
-                    onSetStatus={() => {}}
-                    onDuplicate={() => {}}
-                    onDelete={() => {}}
-                  />
+                <div className="flex min-h-0 flex-1">
+                  {weekDays.map((day) => (
+                    <DayColumn
+                      key={day}
+                      dayKey={day}
+                      jobs={jobs.filter((j) => j.day === day)}
+                      activeId={activeId}
+                      onAddJob={(d) => setJobModal({ day: d })}
+                      onMarkAllComplete={(d) => setDayModal({ day: d, mode: "complete" })}
+                      onCancelAll={(d) => setDayModal({ day: d, mode: "cancel" })}
+                      onSetStatus={(job) => setStatusModal({ job })}
+                      onDuplicate={duplicateJob}
+                      onDelete={deleteJob}
+                      onReasonClick={(job) => setStatusModal({ job })}
+                      onLinkWorkOrder={(job) => setJobModal({ day: job.day, job })}
+                    />
+                  ))}
                 </div>
-              )}
-            </DragOverlay>
-          </DndContext>
-        )}
+
+                <DragOverlay>
+                  {activeJob && (
+                    <div className="rotate-2 opacity-95 shadow-2xl">
+                      <JobCard
+                        job={activeJob}
+                        onSetStatus={() => {}}
+                        onDuplicate={() => {}}
+                        onDelete={() => {}}
+                      />
+                    </div>
+                  )}
+                </DragOverlay>
+              </DndContext>
+            }
+          />
+          <Route
+            path="/resolve"
+            element={
+              <ResolveScreen
+                jobs={jobs}
+                onBack={() => navigate("/planner")}
+                onStatus={handleStatus}
+                onSetStatus={(job) => setStatusModal({ job })}
+                onDuplicate={duplicateJob}
+                onDelete={deleteJob}
+                onMarkAllComplete={(d) => setDayModal({ day: d, mode: "complete" })}
+                onCancelAll={(d) => setDayModal({ day: d, mode: "cancel" })}
+                onReschedule={(job, day, time) => {
+                  const snap = jobs;
+                  updateJob(job.id, { day });
+                  pushToast(
+                    `${job.name} moved to ${fullDayName(day)} ${dateNumber(day)} ${monthName(day)}, ${time}`,
+                    () => setJobs(snap),
+                  );
+                }}
+              />
+            }
+          />
+          <Route path="/work-orders" element={<WorkOrdersPage />} />
+          <Route
+            path="/work-orders/import"
+            element={
+              <ImportWizard
+                onBack={() => navigate("/work-orders")}
+                onImported={(count) =>
+                  navigate("/work-orders", {
+                    state: { toast: `${count} work order${count === 1 ? "" : "s"} imported` },
+                  })
+                }
+              />
+            }
+          />
+        </Routes>
       </div>
 
       {jobModal && (

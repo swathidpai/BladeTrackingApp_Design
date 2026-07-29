@@ -1,42 +1,47 @@
 import { CalendarRange, ClipboardList, LayoutDashboard, Settings } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
 import { Tooltip } from "../ui/Tooltip";
 import turbineMark from "../../imports/Container.png";
 
-export type NavView = "planner" | "workorders";
-
-interface Props {
-  view: NavView;
-  onNavigate: (view: NavView) => void;
-}
-
-const items: { icon: typeof LayoutDashboard; label: string; view?: NavView }[] = [
+const items: { icon: typeof LayoutDashboard; label: string; to?: string; match?: string[] }[] = [
   { icon: LayoutDashboard, label: "Dashboard" },
-  { icon: CalendarRange, label: "Job Planner", view: "planner" },
-  { icon: ClipboardList, label: "Work Orders", view: "workorders" },
+  { icon: CalendarRange, label: "Job Planner", to: "/planner", match: ["/", "/planner", "/resolve"] },
+  { icon: ClipboardList, label: "Work Orders", to: "/work-orders", match: ["/work-orders"] },
 ];
 
-export function NavRail({ view, onNavigate }: Props) {
+export function NavRail() {
+  const { pathname } = useLocation();
+
   return (
     <nav className="flex w-16 shrink-0 flex-col items-center border-r border-border-default bg-bg-base py-3">
       <div className="mb-4 flex h-11 w-11 items-center justify-center">
         <img src={turbineMark} alt="WindAI" className="h-8 w-8 object-contain" />
       </div>
       <div className="flex flex-1 flex-col items-center gap-1">
-        {items.map(({ icon: Icon, label, view: itemView }) => {
-          const selected = itemView === view;
+        {items.map(({ icon: Icon, label, to, match }) => {
+          const selected = match?.some((m) => (m === "/" ? pathname === "/" : pathname.startsWith(m)));
+          const content = (
+            <span
+              className={`flex h-11 w-11 items-center justify-center rounded-[8px] transition ${
+                selected
+                  ? "bg-accent-dim text-accent-primary"
+                  : "text-text-muted hover:text-text-primary"
+              }`}
+            >
+              <Icon size={20} />
+            </span>
+          );
           return (
             <Tooltip key={label} label={label} side="right">
-              <button
-                type="button"
-                onClick={itemView ? () => onNavigate(itemView) : undefined}
-                className={`flex h-11 w-11 items-center justify-center rounded-[8px] transition ${
-                  selected
-                    ? "bg-accent-dim text-accent-primary"
-                    : "text-text-muted hover:text-text-primary"
-                }`}
-              >
-                <Icon size={20} />
-              </button>
+              {to ? (
+                <Link to={to} aria-label={label}>
+                  {content}
+                </Link>
+              ) : (
+                <button type="button" aria-label={label}>
+                  {content}
+                </button>
+              )}
             </Tooltip>
           );
         })}

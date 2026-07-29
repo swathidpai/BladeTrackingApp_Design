@@ -23,16 +23,10 @@ interface Props {
 }
 
 const STEPS = [
-  { n: 1, label: "Import file" },
-  { n: 2, label: "Map columns" },
-  { n: 3, label: "Preview & confirm" },
+  { n: 1, label: "Import File" },
+  { n: 2, label: "Map Data" },
+  { n: 3, label: "Preview & Confirm" },
 ] as const;
-
-const FIELD_TONE: Record<MappableField, { text: string; bg: string; border: string }> = {
-  name: { text: "text-accent-primary", bg: "bg-accent-primary/10", border: "border-accent-primary" },
-  number: { text: "text-success", bg: "bg-success/10", border: "border-success" },
-  functionalLocation: { text: "text-cancelled", bg: "bg-cancelled/10", border: "border-cancelled" },
-};
 
 export function ImportWizard({ onBack, onImported }: Props) {
   const workOrders = useStore((s) => s.workOrders);
@@ -45,7 +39,7 @@ export function ImportWizard({ onBack, onImported }: Props) {
   const [error, setError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  function handleBack() {
+  function discardAndBack() {
     if (fileName && !window.confirm("Discard this import and go back to Work Orders?")) return;
     onBack();
   }
@@ -92,56 +86,78 @@ export function ImportWizard({ onBack, onImported }: Props) {
     return { raw, asset, subAsset };
   }, [parsed, mapping.functionalLocation]);
 
+  const canGoNext = step === 1 ? !!parsed : step === 2 ? canMap : true;
+
+  function goNext() {
+    if (step === 1 && parsed) setStep(2);
+    else if (step === 2 && canMap) setStep(3);
+    else if (step === 3) confirmImport();
+  }
+
+  function goBack() {
+    if (step === 1) discardAndBack();
+    else setStep((s) => (s - 1) as 1 | 2);
+  }
+
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto scroll-slim">
-      <div className="flex items-center gap-3 px-6 py-6">
-        <button
-          type="button"
-          onClick={handleBack}
-          className="flex h-8 w-8 items-center justify-center rounded-[6px] text-text-secondary transition hover:bg-surface-active hover:text-text-primary"
-          aria-label="Back to Work Orders"
-        >
-          <ChevronLeft size={20} />
-        </button>
-        <h1 className="text-[28px] font-medium leading-none tracking-[-0.2px] text-text-primary">
-          Import Work Orders
-        </h1>
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="min-h-0 flex-1 overflow-y-auto scroll-slim">
+        <div className="flex items-center gap-3 px-6 py-6">
+          <button
+            type="button"
+            onClick={discardAndBack}
+            className="flex h-8 w-8 items-center justify-center rounded-[6px] text-text-secondary transition hover:bg-surface-active hover:text-text-primary"
+            aria-label="Back to Work Orders"
+          >
+            <ChevronLeft size={20} />
+          </button>
+          <h1 className="text-[22px] font-medium leading-none tracking-[-0.2px] text-text-primary">
+            Import Work Orders
+          </h1>
+        </div>
+
+        <StepIndicator current={step} onJump={(n) => n < step && setStep(n)} />
+
+        <div className="px-6 py-6">
+          {step === 1 && (
+            <Step1
+              fileName={fileName}
+              parsed={parsed}
+              error={error}
+              fileRef={fileRef}
+              onDrop={onDrop}
+              onFile={handleFile}
+              onRemove={() => {
+                setFileName(null);
+                setParsed(null);
+                setMapping({});
+                setError(null);
+              }}
+            />
+          )}
+          {step === 2 && parsed && (
+            <Step2
+              parsed={parsed}
+              mapping={mapping}
+              setMapping={setMapping}
+              derivedExample={derivedExample}
+            />
+          )}
+          {step === 3 && <Step3 preview={preview} />}
+        </div>
       </div>
 
-      <StepIndicator current={step} onJump={(n) => n < step && setStep(n)} />
-
-      <div className="flex-1 px-6 pb-10 pt-6">
-        {step === 1 && (
-          <Step1
-            fileName={fileName}
-            parsed={parsed}
-            error={error}
-            fileRef={fileRef}
-            onDrop={onDrop}
-            onFile={handleFile}
-            onRemove={() => {
-              setFileName(null);
-              setParsed(null);
-              setMapping({});
-              setError(null);
-            }}
-            onNext={() => setStep(2)}
-          />
-        )}
-        {step === 2 && parsed && (
-          <Step2
-            parsed={parsed}
-            mapping={mapping}
-            setMapping={setMapping}
-            derivedExample={derivedExample}
-            canMap={canMap}
-            onBack={() => setStep(1)}
-            onNext={() => setStep(3)}
-          />
-        )}
-        {step === 3 && (
-          <Step3 preview={preview} onBack={() => setStep(2)} onConfirm={confirmImport} />
-        )}
+      <div className="flex shrink-0 items-center justify-between border-t border-border-default bg-surface px-6 py-4">
+        <Button variant="ghost" onClick={goBack}>
+          Back
+        </Button>
+        <Button
+          variant="primary"
+          onClick={goNext}
+          disabled={!canGoNext || (step === 3 && (!preview || preview.toImport.length === 0))}
+        >
+          {step === 3 ? "Save and import" : "Save and Next"}
+        </Button>
       </div>
     </div>
   );
@@ -151,7 +167,7 @@ export function ImportWizard({ onBack, onImported }: Props) {
 
 function StepIndicator({ current, onJump }: { current: number; onJump: (n: 1 | 2 | 3) => void }) {
   return (
-    <div className="flex items-center gap-3 border-b border-border-default px-6 pb-6">
+    <div className="flex items-center justify-center gap-3 px-6 pb-6">
       {STEPS.map((s, i) => {
         const state = s.n < current ? "done" : s.n === current ? "active" : "upcoming";
         return (
@@ -160,24 +176,28 @@ function StepIndicator({ current, onJump }: { current: number; onJump: (n: 1 | 2
               type="button"
               disabled={state !== "done"}
               onClick={() => onJump(s.n)}
-              className={`flex items-center gap-2 rounded-full py-1 pl-1 pr-3 text-[13px] font-medium transition ${
-                state === "done" ? "cursor-pointer hover:bg-surface-active" : "cursor-default"
-              }`}
+              className={`flex flex-col items-center gap-1.5 ${state === "done" ? "cursor-pointer" : "cursor-default"}`}
             >
               <span
                 className={`flex h-6 w-6 items-center justify-center rounded-full text-[12px] font-medium ${
                   state === "active"
-                    ? "bg-accent-primary text-bg-base"
+                    ? "border-2 border-accent-primary text-accent-primary"
                     : state === "done"
-                      ? "bg-success text-bg-base"
+                      ? "text-accent-primary"
                       : "border border-border-strong text-text-muted"
                 }`}
               >
                 {state === "done" ? <Check size={13} strokeWidth={3} /> : s.n}
               </span>
-              <span className={state === "upcoming" ? "text-text-muted" : "text-text-primary"}>{s.label}</span>
+              <span
+                className={`text-[13px] font-medium ${
+                  state === "upcoming" ? "text-text-muted" : "text-accent-primary"
+                }`}
+              >
+                {s.n}. {s.label}
+              </span>
             </button>
-            {i < STEPS.length - 1 && <span className="h-px w-8 bg-border-default" />}
+            {i < STEPS.length - 1 && <span className="mb-4 h-px w-24 bg-border-default" />}
           </div>
         );
       })}
@@ -195,7 +215,6 @@ function Step1({
   onDrop,
   onFile,
   onRemove,
-  onNext,
 }: {
   fileName: string | null;
   parsed: ParsedWorkbook | null;
@@ -204,57 +223,23 @@ function Step1({
   onDrop: (e: React.DragEvent) => void;
   onFile: (f: File) => void;
   onRemove: () => void;
-  onNext: () => void;
 }) {
   return (
     <div className="mx-auto max-w-4xl">
-      {!parsed ? (
-        <div
-          onDragOver={(e) => e.preventDefault()}
-          onDrop={onDrop}
-          onClick={() => fileRef.current?.click()}
-          className="flex cursor-pointer flex-col items-center gap-3 rounded-[6px] border border-dashed border-border-strong bg-surface-raised px-6 py-16 text-center transition hover:border-accent-primary"
-        >
-          <Upload size={28} className="text-text-muted" />
-          <div>
-            <p className="text-[15px] font-medium text-text-primary">
-              + Choose or drag a file to import
-            </p>
-            <p className="mt-1 text-[13px] text-text-muted">Only .xlsx or .csv files</p>
-          </div>
-        </div>
-      ) : (
+      <div
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={onDrop}
+        onClick={() => fileRef.current?.click()}
+        className="flex cursor-pointer flex-col items-center gap-3 rounded-[6px] border border-dashed border-border-strong bg-surface-raised px-6 py-16 text-center transition hover:border-accent-primary"
+      >
+        <Upload size={28} className="text-text-muted" />
         <div>
-          <div className="flex items-center gap-3 rounded-[6px] border border-border-default bg-surface-raised px-4 py-3">
-            <FileSpreadsheet size={20} className="shrink-0 text-accent-primary" />
-            <span className="min-w-0 flex-1 truncate text-[14px] text-text-primary">{fileName}</span>
-            <button
-              type="button"
-              onClick={onRemove}
-              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[4px] text-text-muted transition hover:text-attention"
-              aria-label="Remove file"
-            >
-              <X size={16} />
-            </button>
-          </div>
-
-          <p className="mt-3 text-[13px] text-text-secondary">
-            <span className="font-medium text-text-primary">{parsed.rows.length}</span> work order
-            {parsed.rows.length === 1 ? "" : "s"} found ·{" "}
-            <span className="font-medium text-text-primary">{parsed.headers.length}</span> column
-            {parsed.headers.length === 1 ? "" : "s"}
+          <p className="text-[15px] font-medium text-text-primary">
+            Drop an Excel file here, or click to browse
           </p>
-
-          <RawPreviewTable parsed={parsed} rowLimit={10} />
+          <p className="mt-1 text-[13px] text-text-muted">.xlsx, .xls or .csv — a SAP work order export</p>
         </div>
-      )}
-
-      {error && (
-        <div className="mt-4 flex items-start gap-2 rounded-[6px] border border-attention/40 bg-attention-bg/60 px-3 py-2 text-[13px] text-text-secondary">
-          <AlertTriangle size={15} className="mt-0.5 shrink-0 text-attention" />
-          {error}
-        </div>
-      )}
+      </div>
 
       <input
         ref={fileRef}
@@ -268,18 +253,43 @@ function Step1({
         }}
       />
 
-      <div className="mt-6 flex justify-end">
-        <Button variant="primary" onClick={onNext} disabled={!parsed}>
-          Next
-        </Button>
-      </div>
+      {error && (
+        <div className="mt-4 flex items-start gap-2 rounded-[6px] border border-attention/40 bg-attention-bg/60 px-3 py-2 text-[13px] text-text-secondary">
+          <AlertTriangle size={15} className="mt-0.5 shrink-0 text-attention" />
+          {error}
+        </div>
+      )}
+
+      {parsed && (
+        <div className="mt-6">
+          <div className="mb-3 flex items-center gap-3 rounded-[6px] border border-border-default bg-surface-raised px-4 py-3">
+            <FileSpreadsheet size={20} className="shrink-0 text-accent-primary" />
+            <span className="min-w-0 flex-1 truncate text-[14px] text-text-primary">{fileName}</span>
+            <button
+              type="button"
+              onClick={onRemove}
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[4px] text-text-muted transition hover:text-attention"
+              aria-label="Remove file"
+            >
+              <X size={16} />
+            </button>
+          </div>
+
+          <div className="mb-3 rounded-[6px] border border-accent-primary/40 bg-accent-primary/10 px-3 py-2 text-[13px] text-text-primary">
+            <span className="font-medium">{parsed.rows.length}</span> Work Orders and{" "}
+            <span className="font-medium">{parsed.headers.length}</span> columns
+          </div>
+
+          <RawPreviewTable parsed={parsed} rowLimit={10} />
+        </div>
+      )}
     </div>
   );
 }
 
 function RawPreviewTable({ parsed, rowLimit }: { parsed: ParsedWorkbook; rowLimit: number }) {
   return (
-    <div className="mt-3 max-h-96 overflow-auto rounded-[6px] border border-border-default scroll-slim">
+    <div className="max-h-96 overflow-auto rounded-[6px] border border-border-default scroll-slim">
       <table className="w-full text-left text-[13px]">
         <thead className="sticky top-0 bg-surface-active text-text-secondary">
           <tr>
@@ -313,47 +323,43 @@ function RawPreviewTable({ parsed, rowLimit }: { parsed: ParsedWorkbook; rowLimi
 
 /* --------------------------------------------------------------------- step 2 --- */
 
+// Step 2's "Asset" field maps the Functional Location column — asset and
+// sub-asset are both derived from it, so the label speaks to the outcome
+// (Asset) rather than the raw SAP field name.
+const STEP2_LABELS: Record<MappableField, string> = {
+  name: FIELD_LABELS.name,
+  number: FIELD_LABELS.number,
+  functionalLocation: "Asset",
+};
+
 function Step2({
   parsed,
   mapping,
   setMapping,
   derivedExample,
-  canMap,
-  onBack,
-  onNext,
 }: {
   parsed: ParsedWorkbook;
   mapping: Mapping;
   setMapping: (updater: (m: Mapping) => Mapping) => void;
   derivedExample: { raw: string; asset: string; subAsset: string } | null;
-  canMap: boolean;
-  onBack: () => void;
-  onNext: () => void;
 }) {
-  const fieldForHeader = (header: string): MappableField | null => {
-    for (const f of Object.keys(mapping) as MappableField[]) {
-      if (mapping[f] === header) return f;
-    }
-    return null;
-  };
+  const mappedHeaders = new Set(Object.values(mapping).filter(Boolean) as string[]);
 
   return (
     <div className="mx-auto max-w-4xl">
-      <p className="mb-3 text-[13px] text-text-secondary">
-        Choose which column from your file becomes each field.
-      </p>
-
-      <div className="max-h-64 overflow-auto rounded-[6px] border border-border-default scroll-slim">
+      <div className="mb-6 max-h-56 overflow-auto rounded-[6px] border border-border-default scroll-slim">
         <table className="w-full text-left text-[13px]">
           <thead className="sticky top-0 bg-surface-active text-text-secondary">
             <tr>
               {parsed.headers.map((h) => {
-                const field = fieldForHeader(h);
+                const on = mappedHeaders.has(h);
                 return (
                   <th
                     key={h}
-                    className={`whitespace-nowrap px-3 py-2 font-medium ${
-                      field ? FIELD_TONE[field].text : ""
+                    className={`whitespace-nowrap border px-3 py-2 font-medium ${
+                      on
+                        ? "border-accent-primary bg-accent-primary/10 text-accent-primary"
+                        : "border-transparent"
                     }`}
                   >
                     {h}
@@ -366,12 +372,14 @@ function Step2({
             {parsed.rows.slice(0, 3).map((row, i) => (
               <tr key={i} className="border-t border-border-default text-text-secondary">
                 {parsed.headers.map((h) => {
-                  const field = fieldForHeader(h);
+                  const on = mappedHeaders.has(h);
                   return (
                     <td
                       key={h}
-                      className={`whitespace-nowrap px-3 py-2 ${
-                        field ? `${FIELD_TONE[field].bg} text-text-primary` : ""
+                      className={`whitespace-nowrap border px-3 py-2 ${
+                        on
+                          ? "border-accent-primary bg-accent-primary/10 text-text-primary"
+                          : "border-transparent"
                       }`}
                     >
                       {row[h] || "—"}
@@ -384,20 +392,21 @@ function Step2({
         </table>
       </div>
 
-      <div className="mt-6 space-y-4">
-        <div>
-          <Field label={FIELD_LABELS.name}>
-            <Dropdown
-              value={mapping.name ?? null}
-              onChange={(v) => setMapping((m) => ({ ...m, name: v }))}
-              options={parsed.headers.map((h) => ({ value: h, label: h }))}
-              placeholder="Select column…"
-            />
-          </Field>
-          <p className="mt-1 text-[12px] text-text-muted">This column becomes the job title.</p>
-        </div>
+      <p className="mb-4 text-[13px] text-text-secondary">
+        Match each spreadsheet column to a field. Work order number and name are required.
+      </p>
 
-        <Field label={FIELD_LABELS.number}>
+      <div className="space-y-4">
+        <Field label={`${STEP2_LABELS.name} *`}>
+          <Dropdown
+            value={mapping.name ?? null}
+            onChange={(v) => setMapping((m) => ({ ...m, name: v }))}
+            options={parsed.headers.map((h) => ({ value: h, label: h }))}
+            placeholder="Select column…"
+          />
+        </Field>
+
+        <Field label={`${STEP2_LABELS.number} *`}>
           <Dropdown
             value={mapping.number ?? null}
             onChange={(v) => setMapping((m) => ({ ...m, number: v }))}
@@ -407,7 +416,7 @@ function Step2({
         </Field>
 
         <div>
-          <Field label={FIELD_LABELS.functionalLocation}>
+          <Field label={`${STEP2_LABELS.functionalLocation} *`}>
             <Dropdown
               value={mapping.functionalLocation ?? null}
               onChange={(v) => setMapping((m) => ({ ...m, functionalLocation: v }))}
@@ -416,11 +425,11 @@ function Step2({
             />
           </Field>
           <p className="mt-1 text-[12px] text-text-muted">
-            Asset and Sub-asset are read automatically from this.
+            Asset and Sub-asset are read automatically from the functional location.
             {derivedExample && (
               <>
                 {" "}
-                e.g. "{derivedExample.raw}" → Asset{" "}
+                e.g. "{derivedExample.raw}" →{" "}
                 <span className="text-text-secondary">{derivedExample.asset || "—"}</span> ·{" "}
                 <span className="text-text-secondary">{derivedExample.subAsset || "—"}</span>
               </>
@@ -428,30 +437,13 @@ function Step2({
           </p>
         </div>
       </div>
-
-      <div className="mt-6 flex justify-between">
-        <Button variant="ghost" onClick={onBack}>
-          Back
-        </Button>
-        <Button variant="primary" onClick={onNext} disabled={!canMap}>
-          Save &amp; next
-        </Button>
-      </div>
     </div>
   );
 }
 
 /* --------------------------------------------------------------------- step 3 --- */
 
-function Step3({
-  preview,
-  onBack,
-  onConfirm,
-}: {
-  preview: ImportPreview | null;
-  onBack: () => void;
-  onConfirm: () => void;
-}) {
+function Step3({ preview }: { preview: ImportPreview | null }) {
   if (!preview) return null;
 
   return (
@@ -508,15 +500,6 @@ function Step3({
           </table>
         </div>
       )}
-
-      <div className="mt-6 flex justify-between">
-        <Button variant="ghost" onClick={onBack}>
-          Back
-        </Button>
-        <Button variant="primary" onClick={onConfirm} disabled={preview.toImport.length === 0}>
-          Save and import
-        </Button>
-      </div>
     </div>
   );
 }

@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { DndContext, type DragEndEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { useLocation, useNavigate } from "react-router-dom";
 import { AlertTriangle, Plus, Upload } from "lucide-react";
 import { JOB_TYPES, Job, WorkOrder, nextId } from "../../data";
 import { dateNumber, fullDayName, todayWindow } from "../../utils";
@@ -10,14 +11,12 @@ import { ToastStack, type ToastData } from "../ui/Toast";
 import { WorkOrderCalendar } from "./WorkOrderCalendar";
 import { WorkOrderList } from "./WorkOrderList";
 import { AddWorkOrderModal } from "./AddWorkOrderModal";
-import { ImportWizard } from "./ImportWizard";
-
-type Mode = "list" | "import";
 
 let toastSeq = 0;
 
 export function WorkOrdersPage() {
-  const [mode, setMode] = useState<Mode>("list");
+  const navigate = useNavigate();
+  const location = useLocation();
   const jobs = useStore((s) => s.jobs);
   const workOrders = useStore((s) => s.workOrders);
   const addJob = useStore((s) => s.addJob);
@@ -35,6 +34,29 @@ export function WorkOrdersPage() {
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
+  function pushToast(message: string, onUndo?: () => void) {
+    const id = ++toastSeq;
+    setToasts((t) => [...t, { id, message, onUndo }]);
+  }
+  const dismissToast = (id: number) => setToasts((t) => t.filter((x) => x.id !== id));
+
+  // Flash a toast carried over from a redirect (e.g. after an import), then
+  // clear it from history so it doesn't reappear on refresh or back/forward.
+  // Guarded with a ref because StrictMode double-invokes mount effects in
+  // dev, which would otherwise push the same toast twice before the
+  // clearing navigate() below takes effect.
+  const flashHandled = useRef(false);
+  useEffect(() => {
+    if (flashHandled.current) return;
+    flashHandled.current = true;
+    const flash = (location.state as { toast?: string } | null)?.toast;
+    if (flash) {
+      pushToast(flash);
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const jobsByDay = useMemo(() => {
     const map = new Map<string, Job[]>();
     for (const job of jobs) {
@@ -43,12 +65,6 @@ export function WorkOrdersPage() {
     }
     return map;
   }, [jobs]);
-
-  function pushToast(message: string, onUndo?: () => void) {
-    const id = ++toastSeq;
-    setToasts((t) => [...t, { id, message, onUndo }]);
-  }
-  const dismissToast = (id: number) => setToasts((t) => t.filter((x) => x.id !== id));
 
   function planWorkOrder(wo: WorkOrder, day: string) {
     const defaults = wo.type ? JOB_TYPES.find((t) => t.name === wo.type)?.defaults : undefined;
@@ -118,48 +134,38 @@ export function WorkOrdersPage() {
 
   return (
     <DndContext sensors={sensors} onDragEnd={onDragEnd}>
-      {mode === "import" ? (
-        <ImportWizard
-          onBack={() => setMode("list")}
-          onImported={(count) => {
-            setMode("list");
-            pushToast(`${count} work order${count === 1 ? "" : "s"} imported`);
-          }}
-        />
-      ) : (
-        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto scroll-slim">
-          <div className="flex items-center justify-between px-6 py-6">
-            <h1 className="text-[28px] font-medium leading-none tracking-[-0.2px] text-text-primary">
-              Work Orders
-            </h1>
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" onClick={() => setMode("import")}>
-                <Upload size={15} /> Import work orders
-              </Button>
-              <Button variant="primary" onClick={() => setAddOpen(true)}>
-                <Plus size={15} /> New work order
-              </Button>
-            </div>
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto scroll-slim">
+        <div className="flex items-center justify-between px-6 py-6">
+          <h1 className="text-[28px] font-medium leading-none tracking-[-0.2px] text-text-primary">
+            Work Orders
+          </h1>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" onClick={() => navigate("/work-orders/import")}>
+              <Upload size={15} /> Import work orders
+            </Button>
+            <Button variant="primary" onClick={() => setAddOpen(true)}>
+              <Plus size={15} /> New work order
+            </Button>
           </div>
-
-          <WorkOrderCalendar
-            days={days}
-            jobsByDay={jobsByDay}
-            onStep={(weeks) => setWeekOffset((o) => o + weeks)}
-            onToday={() => setWeekOffset(0)}
-            onDeleteJob={deleteJobFromCalendar}
-          />
-
-          <WorkOrderList
-            workOrders={workOrders}
-            onToggleStatus={(wo) => {
-              toggleWorkOrderStatus(wo.id);
-              pushToast(wo.status === "open" ? `${wo.name} marked complete` : `${wo.name} reopened`);
-            }}
-            onDelete={setDeleteTarget}
-          />
         </div>
-      )}
+
+        <WorkOrderCalendar
+          days={days}
+          jobsByDay={jobsByDay}
+          onStep={(weeks) => setWeekOffset((o) => o + weeks)}
+          onToday={() => setWeekOffset(0)}
+          onDeleteJob={deleteJobFromCalendar}
+        />
+
+        <WorkOrderList
+          workOrders={workOrders}
+          onToggleStatus={(wo) => {
+            toggleWorkOrderStatus(wo.id);
+            pushToast(wo.status === "open" ? `${wo.name} marked complete` : `${wo.name} reopened`);
+          }}
+          onDelete={setDeleteTarget}
+        />
+      </div>
 
       {addOpen && <AddWorkOrderModal onClose={() => setAddOpen(false)} />}
       {deleteTarget && (
