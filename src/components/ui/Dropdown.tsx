@@ -82,13 +82,13 @@ export function Field({
   children: ReactNode;
 }) {
   return (
-    <label className="block">
+    <div className="block">
       <span className="mb-1.5 flex items-center justify-between">
         <span className="text-[13px] font-medium text-text-primary">{label}</span>
         {right}
       </span>
       {children}
-    </label>
+    </div>
   );
 }
 

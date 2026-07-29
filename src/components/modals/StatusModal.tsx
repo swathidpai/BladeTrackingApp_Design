@@ -16,6 +16,7 @@ import { Pill } from "../ui/Pill";
 import { Dropdown, Field, TextInput } from "../ui/Dropdown";
 import { Stepper } from "../ui/Stepper";
 import { Accordion } from "../ui/Accordion";
+import { WorkOrderField } from "../ui/WorkOrderField";
 
 interface Props {
   job: Job;
@@ -48,6 +49,7 @@ export function StatusModal({ job, initialBranch, onClose, onSave }: Props) {
 
   const [moreOpen, setMoreOpen] = useState(branch === "planned");
   const [jobName, setJobName] = useState(job.name);
+  const [workOrder, setWorkOrder] = useState<string | null>(job.workOrder);
   const [asset, setAsset] = useState<string | null>(job.asset ?? null);
   const [subAsset, setSubAsset] = useState<string | null>(job.subAsset ?? null);
   const [workType, setWorkType] = useState<JobType>(job.type);
@@ -108,6 +110,7 @@ export function StatusModal({ job, initialBranch, onClose, onSave }: Props) {
         asset,
         subAsset,
         type: workType,
+        workOrder,
       },
       branch,
     );
@@ -125,6 +128,7 @@ export function StatusModal({ job, initialBranch, onClose, onSave }: Props) {
         asset,
         subAsset,
         type: workType,
+        workOrder,
       },
       branch,
       { closeWorkOrder: true },
@@ -300,6 +304,9 @@ export function StatusModal({ job, initialBranch, onClose, onSave }: Props) {
           }
         />
       </Field>
+
+      {/* SAP work order — constant across Planned / Successful / Cancelled */}
+      <WorkOrderField workOrder={workOrder} onChange={setWorkOrder} workType={workType} />
 
       {/* More details accordion */}
       <Accordion label="More details" open={moreOpen} onToggle={() => setMoreOpen((o) => !o)}>

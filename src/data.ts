@@ -1,4 +1,4 @@
-export type JobType = "Blade Repair" | "Blade Painting" | "Tower Cleaning";
+export type JobType = "Blade Repair" | "Blade Tip Repair" | "Blade Painting" | "Tower Cleaning";
 export type JobStatus = "planned" | "complete" | "cancelled";
 export type TurbineStatus = "Online" | "Offline";
 
@@ -23,6 +23,7 @@ export interface WorkOrder {
   number: string;
   description: string;
   turbine: string;
+  type: JobType; // drives the "related work orders" match on the selected job type
 }
 
 export interface WorkTypeDefaults {
@@ -40,6 +41,11 @@ export const JOB_TYPES: {
     name: "Blade Repair",
     description: "Structural or laminate repair on a blade section",
     defaults: { techs: 3, duration: 8, turbineStatus: "Offline" },
+  },
+  {
+    name: "Blade Tip Repair",
+    description: "Repair or reinforcement of the blade tip section",
+    defaults: { techs: 2, duration: 6, turbineStatus: "Offline" },
   },
   {
     name: "Blade Painting",
@@ -60,12 +66,15 @@ export const SUB_ASSETS = ["Blade A", "Blade B", "Blade C", "Tower", "Nacelle", 
 export const REASONS = ["Wind", "Fog", "Rain", "Lightning", "Humidity", "Gust", "Wave Height"];
 
 export const WORK_ORDERS: WorkOrder[] = [
-  { number: "40021874", description: "Blade C trailing edge crack", turbine: "C4" },
-  { number: "40021912", description: "Leading edge erosion survey", turbine: "D2" },
-  { number: "40022003", description: "Tower base corrosion clean", turbine: "A11" },
-  { number: "40022155", description: "Blade A lightning strike check", turbine: "B6" },
-  { number: "40022210", description: "Recoat blade B outboard", turbine: "C7" },
-  { number: "40022288", description: "Blade C repair follow-up", turbine: "C4" },
+  { number: "40021874", description: "Blade C trailing edge crack", turbine: "C4", type: "Blade Repair" },
+  { number: "40021912", description: "Leading edge erosion survey", turbine: "D2", type: "Blade Repair" },
+  { number: "40022003", description: "Tower base corrosion clean", turbine: "A11", type: "Tower Cleaning" },
+  { number: "40022155", description: "Blade A lightning strike check", turbine: "B6", type: "Blade Repair" },
+  { number: "40022210", description: "Recoat blade B outboard", turbine: "C7", type: "Blade Painting" },
+  { number: "40022288", description: "Blade C repair follow-up", turbine: "C4", type: "Blade Repair" },
+  { number: "40022351", description: "Blade B tip erosion repair", turbine: "D2", type: "Blade Tip Repair" },
+  { number: "40022410", description: "Tower wash-down inspection", turbine: "B6", type: "Tower Cleaning" },
+  { number: "40022455", description: "Blade C recoat leading edge", turbine: "C7", type: "Blade Painting" },
 ];
 
 // Deterministic "today" so the mock is consistent across screens.
