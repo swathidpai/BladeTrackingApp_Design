@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from "react";
 import { AlertTriangle, Check, ChevronLeft, FileSpreadsheet, Upload, X } from "lucide-react";
 import { useStore } from "../../store";
 import { Button } from "../ui/Button";
-import { Dropdown, Field } from "../ui/Dropdown";
+import { Dropdown } from "../ui/Dropdown";
 import { deriveFromFunctionalLocation } from "./deriveAsset";
 import {
   FIELD_LABELS,
@@ -64,7 +64,10 @@ export function ImportWizard({ onBack, onImported }: Props) {
     if (file) handleFile(file);
   }
 
-  const canMap = !!(mapping.name && mapping.number && mapping.functionalLocation);
+  const allMapped = !!(mapping.name && mapping.number && mapping.functionalLocation);
+  const mappedValues = [mapping.name, mapping.number, mapping.functionalLocation].filter(Boolean);
+  const hasDuplicateMapping = new Set(mappedValues).size !== mappedValues.length;
+  const canMap = allMapped && !hasDuplicateMapping;
 
   const preview: ImportPreview | null = useMemo(() => {
     if (step !== 3 || !parsed || !canMap) return null;
@@ -141,6 +144,7 @@ export function ImportWizard({ onBack, onImported }: Props) {
               mapping={mapping}
               setMapping={setMapping}
               derivedExample={derivedExample}
+              hasDuplicateMapping={hasDuplicateMapping}
             />
           )}
           {step === 3 && <Step3 preview={preview} />}
@@ -323,46 +327,69 @@ function RawPreviewTable({ parsed, rowLimit }: { parsed: ParsedWorkbook; rowLimi
 
 /* --------------------------------------------------------------------- step 2 --- */
 
-// Step 2's "Asset" field maps the Functional Location column — asset and
-// sub-asset are both derived from it, so the label speaks to the outcome
-// (Asset) rather than the raw SAP field name.
-const STEP2_LABELS: Record<MappableField, string> = {
-  name: FIELD_LABELS.name,
-  number: FIELD_LABELS.number,
-  functionalLocation: "Asset",
+type FieldTone = { text: string; bg: string; border: string; dot: string };
+
+// Three field-keyed tints, chosen to read distinctly from one another on the
+// dark background: blue for name, cyan for number, violet for functional
+// location. Not part of the app's core token set — scoped to this preview
+// highlighting only.
+const FIELD_TONE: Record<MappableField, FieldTone> = {
+  name: { text: "text-accent-primary", bg: "bg-accent-primary/10", border: "border-accent-primary", dot: "bg-accent-primary" },
+  number: { text: "text-cyan-400", bg: "bg-cyan-400/10", border: "border-cyan-400", dot: "bg-cyan-400" },
+  functionalLocation: { text: "text-violet-400", bg: "bg-violet-400/10", border: "border-violet-400", dot: "bg-violet-400" },
 };
+
+const FIELD_ORDER: MappableField[] = ["name", "number", "functionalLocation"];
 
 function Step2({
   parsed,
   mapping,
   setMapping,
   derivedExample,
+  hasDuplicateMapping,
 }: {
   parsed: ParsedWorkbook;
   mapping: Mapping;
   setMapping: (updater: (m: Mapping) => Mapping) => void;
   derivedExample: { raw: string; asset: string; subAsset: string } | null;
+  hasDuplicateMapping: boolean;
 }) {
-  const mappedHeaders = new Set(Object.values(mapping).filter(Boolean) as string[]);
+  const [activeField, setActiveField] = useState<MappableField | null>(null);
+
+  const fieldForHeader = (header: string): MappableField | null => {
+    for (const f of FIELD_ORDER) if (mapping[f] === header) return f;
+    return null;
+  };
+
+  function example(field: MappableField): string | null {
+    const col = mapping[field];
+    if (!col) return null;
+    const value = parsed.rows[0]?.[col];
+    return value ? `${col} → "${value}"` : null;
+  }
 
   return (
     <div className="mx-auto max-w-4xl">
-      <div className="mb-6 max-h-56 overflow-auto rounded-[6px] border border-border-default scroll-slim">
+      {/* 1. Preview table, three-colour highlighting keyed to each field */}
+      <div className="mb-4 max-h-56 overflow-auto rounded-[6px] border border-border-default scroll-slim">
         <table className="w-full text-left text-[13px]">
           <thead className="sticky top-0 bg-surface-active text-text-secondary">
             <tr>
               {parsed.headers.map((h) => {
-                const on = mappedHeaders.has(h);
+                const field = fieldForHeader(h);
+                const tone = field ? FIELD_TONE[field] : null;
+                const active = field && field === activeField;
                 return (
                   <th
                     key={h}
                     className={`whitespace-nowrap border px-3 py-2 font-medium ${
-                      on
-                        ? "border-accent-primary bg-accent-primary/10 text-accent-primary"
-                        : "border-transparent"
-                    }`}
+                      tone ? `${tone.border} ${tone.bg} ${tone.text}` : "border-transparent"
+                    } ${active ? "border-2" : ""}`}
                   >
-                    {h}
+                    <span className="flex items-center gap-1.5">
+                      {tone && <span className={`h-1.5 w-1.5 rounded-full ${tone.dot}`} />}
+                      {h}
+                    </span>
                   </th>
                 );
               })}
@@ -372,15 +399,15 @@ function Step2({
             {parsed.rows.slice(0, 3).map((row, i) => (
               <tr key={i} className="border-t border-border-default text-text-secondary">
                 {parsed.headers.map((h) => {
-                  const on = mappedHeaders.has(h);
+                  const field = fieldForHeader(h);
+                  const tone = field ? FIELD_TONE[field] : null;
+                  const active = field && field === activeField;
                   return (
                     <td
                       key={h}
                       className={`whitespace-nowrap border px-3 py-2 ${
-                        on
-                          ? "border-accent-primary bg-accent-primary/10 text-text-primary"
-                          : "border-transparent"
-                      }`}
+                        tone ? `${tone.border} ${tone.bg} text-text-primary` : "border-transparent"
+                      } ${active ? "border-2" : ""}`}
                     >
                       {row[h] || "—"}
                     </td>
@@ -392,51 +419,118 @@ function Step2({
         </table>
       </div>
 
-      <p className="mb-4 text-[13px] text-text-secondary">
-        Match each spreadsheet column to a field. Work order number and name are required.
+      {/* 2. Reassurance line */}
+      <p className="mb-5 text-[13px] text-text-secondary">
+        We matched these columns for you — check they look right, or change any.
       </p>
 
-      <div className="space-y-4">
-        <Field label={`${STEP2_LABELS.name} *`}>
-          <Dropdown
-            value={mapping.name ?? null}
-            onChange={(v) => setMapping((m) => ({ ...m, name: v }))}
-            options={parsed.headers.map((h) => ({ value: h, label: h }))}
-            placeholder="Select column…"
-          />
-        </Field>
+      {/* 3-4. Mapping rows, all visible, with optional active-row emphasis */}
+      <div className="space-y-2">
+        <MappingRow
+          field="name"
+          label={`${FIELD_LABELS.name} *`}
+          value={mapping.name ?? null}
+          example={example("name")}
+          headers={parsed.headers}
+          active={activeField === "name"}
+          onFocus={() => setActiveField("name")}
+          onChange={(v) => setMapping((m) => ({ ...m, name: v }))}
+        />
+        <MappingRow
+          field="number"
+          label={`${FIELD_LABELS.number} *`}
+          value={mapping.number ?? null}
+          example={example("number")}
+          headers={parsed.headers}
+          active={activeField === "number"}
+          onFocus={() => setActiveField("number")}
+          onChange={(v) => setMapping((m) => ({ ...m, number: v }))}
+        />
+        <MappingRow
+          field="functionalLocation"
+          label="Functional location *"
+          value={mapping.functionalLocation ?? null}
+          example={example("functionalLocation")}
+          headers={parsed.headers}
+          active={activeField === "functionalLocation"}
+          onFocus={() => setActiveField("functionalLocation")}
+          onChange={(v) => setMapping((m) => ({ ...m, functionalLocation: v }))}
+        >
+          {derivedExample && (
+            <p className="mt-1.5 text-[12px] text-text-muted">
+              Asset and sub-asset are read from this →{" "}
+              <span className="text-text-secondary">
+                {derivedExample.asset || "—"} · {derivedExample.subAsset || "—"}
+              </span>
+            </p>
+          )}
+        </MappingRow>
+      </div>
 
-        <Field label={`${STEP2_LABELS.number} *`}>
-          <Dropdown
-            value={mapping.number ?? null}
-            onChange={(v) => setMapping((m) => ({ ...m, number: v }))}
-            options={parsed.headers.map((h) => ({ value: h, label: h }))}
-            placeholder="Select column…"
-          />
-        </Field>
+      {hasDuplicateMapping && (
+        <div className="mt-4 flex items-start gap-2 rounded-[6px] border border-attention/40 bg-attention-bg/60 px-3 py-2 text-[13px] text-text-secondary">
+          <AlertTriangle size={15} className="mt-0.5 shrink-0 text-attention" />
+          The same column is mapped to more than one field — pick a different column for each.
+        </div>
+      )}
+    </div>
+  );
+}
 
-        <div>
-          <Field label={`${STEP2_LABELS.functionalLocation} *`}>
-            <Dropdown
-              value={mapping.functionalLocation ?? null}
-              onChange={(v) => setMapping((m) => ({ ...m, functionalLocation: v }))}
-              options={parsed.headers.map((h) => ({ value: h, label: h }))}
-              placeholder="Select column…"
-            />
-          </Field>
-          <p className="mt-1 text-[12px] text-text-muted">
-            Asset and Sub-asset are read automatically from the functional location.
-            {derivedExample && (
-              <>
-                {" "}
-                e.g. "{derivedExample.raw}" →{" "}
-                <span className="text-text-secondary">{derivedExample.asset || "—"}</span> ·{" "}
-                <span className="text-text-secondary">{derivedExample.subAsset || "—"}</span>
-              </>
-            )}
-          </p>
+function MappingRow({
+  field,
+  label,
+  value,
+  example,
+  headers,
+  active,
+  onFocus,
+  onChange,
+  children,
+}: {
+  field: MappableField;
+  label: string;
+  value: string | null;
+  example: string | null;
+  headers: string[];
+  active: boolean;
+  onFocus: () => void;
+  onChange: (v: string) => void;
+  children?: React.ReactNode;
+}) {
+  const tone = FIELD_TONE[field];
+  return (
+    <div
+      onFocus={onFocus}
+      onClick={onFocus}
+      className={`rounded-[6px] border px-4 py-3 transition ${
+        active ? "border-border-strong bg-surface-raised" : "border-transparent bg-transparent"
+      }`}
+    >
+      <div className="flex items-center gap-4">
+        <div className="w-48 shrink-0">
+          <span className="flex items-center gap-1.5 text-[13px] font-medium text-text-primary">
+            <span className={`h-1.5 w-1.5 rounded-full ${tone.dot}`} />
+            {label}
+          </span>
+        </div>
+        <div className="flex-1">
+          <Dropdown
+            value={value}
+            onChange={onChange}
+            options={headers.map((h) => ({ value: h, label: h }))}
+            placeholder="Pick the column for this"
+          />
         </div>
       </div>
+      {value && example ? (
+        <p className="mt-1.5 pl-52 text-[12px] text-text-muted">{example}</p>
+      ) : !value ? (
+        <p className="mt-1.5 pl-52 text-[12px] text-text-muted">
+          We couldn't confidently match this — please choose a column.
+        </p>
+      ) : null}
+      {children}
     </div>
   );
 }
