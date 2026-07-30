@@ -89,8 +89,8 @@ export const JOB_TYPE_COLORS: { name: string; value: string }[] = [
   { name: "Rose", value: "#FB7185" },
 ];
 
-/** Job Type Key auto-fill: slugify the name into an uppercase, underscore id. */
-export function slugifyJobTypeKey(name: string): string {
+/** Key-field auto-fill (job types, cancellation reasons): slugify the name into an uppercase, underscore id. */
+export function slugifyKey(name: string): string {
   return name
     .trim()
     .toUpperCase()
@@ -140,7 +140,77 @@ export const SEED_JOB_TYPES: JobTypeDef[] = [
 export const ASSETS = ["C4", "C7", "D2", "A11", "B6"];
 export const SUB_ASSETS = ["Blade A", "Blade B", "Blade C", "Tower", "Nacelle", "Hub"];
 
-export const REASONS = ["Wind", "Fog", "Rain", "Lightning", "Humidity", "Gust", "Wave Height"];
+/** A cancellation reason as configured in Settings — the source of the "Reasons" pills everywhere. */
+export interface CancellationReasonDef {
+  id: string;
+  name: string;
+  key: string; // slug/unique id, auto-filled from the name, editable
+  icon: string; // key into the settings-layer icon map (kept as a string so this module stays React-free)
+  color: string;
+  description: string;
+}
+
+let crN = 0;
+const crUid = () => `cr-seed-${++crN}`;
+
+export const SEED_CANCELLATION_REASONS: CancellationReasonDef[] = [
+  {
+    id: crUid(),
+    name: "Wind",
+    key: "WIND",
+    icon: "wind",
+    color: "#22D3EE",
+    description: "Sustained wind speed exceeds the safe working limit on the blade or nacelle.",
+  },
+  {
+    id: crUid(),
+    name: "Fog",
+    key: "FOG",
+    icon: "cloud-fog",
+    color: "#94A3B8",
+    description: "Visibility too low for a safe transfer or blade work.",
+  },
+  {
+    id: crUid(),
+    name: "Rain",
+    key: "RAIN",
+    icon: "cloud-rain",
+    color: "#84B8FF",
+    description: "Wet conditions affecting footing, tools or coating cure time.",
+  },
+  {
+    id: crUid(),
+    name: "Lightning",
+    key: "LIGHTNING",
+    icon: "zap",
+    color: "#FBBF24",
+    description: "Electrical storm activity making work on the turbine unsafe.",
+  },
+  {
+    id: crUid(),
+    name: "Humidity",
+    key: "HUMIDITY",
+    icon: "droplets",
+    color: "#A78BFA",
+    description: "Humidity too high for coating or bonding work to cure properly.",
+  },
+  {
+    id: crUid(),
+    name: "Gust",
+    key: "GUST",
+    icon: "wind",
+    color: "#34D399",
+    description: "Sudden gusts exceeding the safe working threshold.",
+  },
+  {
+    id: crUid(),
+    name: "Wave Height",
+    key: "WAVE_HEIGHT",
+    icon: "waves",
+    color: "#F87171",
+    description: "Sea state too rough for a safe vessel transfer.",
+  },
+];
 
 let woN = 0;
 const woUid = () => `wo-seed-${++woN}`;
@@ -298,4 +368,8 @@ export function nextWorkOrderId() {
 
 export function nextJobTypeId() {
   return uniqueId("jt");
+}
+
+export function nextCancellationReasonId() {
+  return uniqueId("cr");
 }

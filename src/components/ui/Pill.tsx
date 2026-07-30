@@ -9,6 +9,8 @@ interface Props {
   onClick?: () => void;
   className?: string;
   tone?: Tone;
+  /** Colour dot shown when unselected — e.g. a cancellation reason's configured colour. Hidden once selected (the check mark takes over). */
+  dotColor?: string;
 }
 
 const SELECTED_TONE: Record<Tone, string> = {
@@ -18,7 +20,7 @@ const SELECTED_TONE: Record<Tone, string> = {
 };
 
 /** Weather / reason multi-select pill; also used for the status branch tags. */
-export function Pill({ label, selected = false, onClick, className = "", tone = "accent" }: Props) {
+export function Pill({ label, selected = false, onClick, className = "", tone = "accent", dotColor }: Props) {
   return (
     <button
       type="button"
@@ -30,6 +32,9 @@ export function Pill({ label, selected = false, onClick, className = "", tone = 
       } ${className}`}
     >
       {selected && <Check size={13} strokeWidth={2.5} />}
+      {!selected && dotColor && (
+        <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: dotColor }} />
+      )}
       {label}
     </button>
   );

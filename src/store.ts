@@ -1,12 +1,15 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import {
+  CancellationReasonDef,
   Job,
   JobTypeDef,
+  SEED_CANCELLATION_REASONS,
   SEED_JOBS,
   SEED_JOB_TYPES,
   WORK_ORDERS,
   WorkOrder,
+  nextCancellationReasonId,
   nextJobTypeId,
   nextWorkOrderId,
 } from "./data";
@@ -15,6 +18,7 @@ interface Store {
   jobs: Job[];
   workOrders: WorkOrder[];
   jobTypes: JobTypeDef[];
+  cancellationReasons: CancellationReasonDef[];
 
   setJobs: (updater: Job[] | ((prev: Job[]) => Job[])) => void;
   updateJob: (id: string, patch: Partial<Job>) => void;
@@ -34,6 +38,11 @@ interface Store {
   updateJobType: (id: string, patch: Partial<Omit<JobTypeDef, "id">>) => void;
   /** Removes the job type from the picker only — jobs/work orders already using its name keep it. */
   deleteJobType: (id: string) => void;
+
+  addCancellationReason: (r: Omit<CancellationReasonDef, "id">) => CancellationReasonDef;
+  updateCancellationReason: (id: string, patch: Partial<Omit<CancellationReasonDef, "id">>) => void;
+  /** Removes the reason from the picker only — jobs already cancelled for it keep the recorded name. */
+  deleteCancellationReason: (id: string) => void;
 }
 
 export const useStore = create<Store>()(
@@ -42,6 +51,7 @@ export const useStore = create<Store>()(
       jobs: SEED_JOBS,
       workOrders: WORK_ORDERS,
       jobTypes: SEED_JOB_TYPES,
+      cancellationReasons: SEED_CANCELLATION_REASONS,
 
       setJobs: (updater) =>
         set((s) => ({ jobs: typeof updater === "function" ? updater(s.jobs) : updater })),
@@ -97,6 +107,18 @@ export const useStore = create<Store>()(
       updateJobType: (id, patch) =>
         set((s) => ({ jobTypes: s.jobTypes.map((t) => (t.id === id ? { ...t, ...patch } : t)) })),
       deleteJobType: (id) => set((s) => ({ jobTypes: s.jobTypes.filter((t) => t.id !== id) })),
+
+      addCancellationReason: (r) => {
+        const record: CancellationReasonDef = { ...r, id: nextCancellationReasonId() };
+        set((s) => ({ cancellationReasons: [...s.cancellationReasons, record] }));
+        return record;
+      },
+      updateCancellationReason: (id, patch) =>
+        set((s) => ({
+          cancellationReasons: s.cancellationReasons.map((r) => (r.id === id ? { ...r, ...patch } : r)),
+        })),
+      deleteCancellationReason: (id) =>
+        set((s) => ({ cancellationReasons: s.cancellationReasons.filter((r) => r.id !== id) })),
     }),
     { name: "windai-blade-tracking" },
   ),

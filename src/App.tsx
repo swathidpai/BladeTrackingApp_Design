@@ -12,7 +12,7 @@ import {
   type DragStartEvent,
 } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
-import { ASSETS, Job, JobStatus, REASONS, SUB_ASSETS, nextId } from "./data";
+import { ASSETS, Job, JobStatus, SUB_ASSETS, nextId } from "./data";
 import { fullDayName, dateNumber, monthName, needsAttention, weekWindow } from "./utils";
 import { useStore } from "./store";
 import { NavRail } from "./components/layout/NavRail";
@@ -31,6 +31,8 @@ import { ToastStack, type ToastData } from "./components/ui/Toast";
 import { SettingsLanding } from "./components/settings/SettingsLanding";
 import { JobTypesListPage } from "./components/settings/JobTypesListPage";
 import { JobTypeFormPage } from "./components/settings/JobTypeFormPage";
+import { CancellationReasonsListPage } from "./components/settings/CancellationReasonsListPage";
+import { CancellationReasonFormPage } from "./components/settings/CancellationReasonFormPage";
 import { SimpleListPage } from "./components/settings/SimpleListPage";
 
 let toastSeq = 0;
@@ -338,16 +340,9 @@ export default function App() {
               />
             }
           />
-          <Route
-            path="/settings/cancellation-reasons"
-            element={
-              <SimpleListPage
-                title="Cancellation Reasons"
-                subtitle="Reasons a job can be cancelled."
-                items={REASONS}
-              />
-            }
-          />
+          <Route path="/settings/cancellation-reasons" element={<CancellationReasonsListPage />} />
+          <Route path="/settings/cancellation-reasons/new" element={<CancellationReasonFormPage />} />
+          <Route path="/settings/cancellation-reasons/:id" element={<CancellationReasonFormPage />} />
         </Routes>
       </div>
 

@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
-import { Check, Plus } from "lucide-react";
-import { ASSETS, Job, JobStatus, JobType, REASONS, SUB_ASSETS, TurbineStatus } from "../../data";
+import { ASSETS, Job, JobStatus, JobType, SUB_ASSETS, TurbineStatus } from "../../data";
 import { Modal } from "../ui/Modal";
 import { Button } from "../ui/Button";
 import { Pill } from "../ui/Pill";
@@ -31,9 +30,6 @@ type DetailField = "techs" | "duration" | "turbineStatus";
 export function StatusModal({ job, initialBranch, onClose, onSave }: Props) {
   const [branch, setBranch] = useState<Branch>(initialBranch ?? job.status);
   const [reasons, setReasons] = useState<string[]>(job.cancelReasons);
-  const [extra, setExtra] = useState<string[]>([]);
-  const [adding, setAdding] = useState(false);
-  const [newReason, setNewReason] = useState("");
 
   const [techs, setTechs] = useState<number | null>(job.techs);
   const [duration, setDuration] = useState<number | null>(job.duration);
@@ -49,6 +45,7 @@ export function StatusModal({ job, initialBranch, onClose, onSave }: Props) {
 
   const workOrders = useStore((s) => s.workOrders);
   const jobTypes = useStore((s) => s.jobTypes);
+  const cancellationReasons = useStore((s) => s.cancellationReasons);
   const linkedWorkOrder = job.workOrder ? workOrders.find((w) => w.number === job.workOrder) : undefined;
   const [markComplete, setMarkComplete] = useState(linkedWorkOrder?.status === "complete");
 
@@ -85,7 +82,6 @@ export function StatusModal({ job, initialBranch, onClose, onSave }: Props) {
     }
   }
 
-  const allReasons = [...REASONS, ...extra];
   const typeOptions = jobTypes.map((t) => ({ value: t.name, label: t.name, description: t.description }));
 
   const title = asset && subAsset ? `${asset} ${subAsset} · ${jobName}` : jobName;
@@ -148,42 +144,15 @@ export function StatusModal({ job, initialBranch, onClose, onSave }: Props) {
           <div>
             <span className="mb-2 block text-[13px] font-medium text-text-primary">Reasons</span>
             <div className="flex flex-wrap gap-2">
-              {allReasons.map((r) => (
-                <Pill key={r} label={r} selected={reasons.includes(r)} onClick={() => toggleReason(r)} />
+              {cancellationReasons.map((r) => (
+                <Pill
+                  key={r.id}
+                  label={r.name}
+                  selected={reasons.includes(r.name)}
+                  onClick={() => toggleReason(r.name)}
+                  dotColor={r.color}
+                />
               ))}
-              {adding ? (
-                <span className="inline-flex items-center gap-1 rounded-full border border-accent-primary bg-surface-raised px-2 py-0.5">
-                  <input
-                    autoFocus
-                    value={newReason}
-                    onChange={(e) => setNewReason(e.target.value)}
-                    placeholder="New reason"
-                    className="w-24 bg-transparent text-[13px] text-text-primary placeholder:text-text-muted focus:outline-none"
-                  />
-                  <button
-                    type="button"
-                    className="text-accent-primary"
-                    onClick={() => {
-                      if (newReason.trim()) {
-                        setExtra((p) => [...p, newReason.trim()]);
-                        setReasons((p) => [...p, newReason.trim()]);
-                      }
-                      setNewReason("");
-                      setAdding(false);
-                    }}
-                  >
-                    <Check size={14} strokeWidth={2.5} />
-                  </button>
-                </span>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setAdding(true)}
-                  className="inline-flex items-center gap-1 rounded-full border border-accent-primary/60 px-3 py-1 text-[13px] font-medium text-accent-primary transition hover:bg-accent-dim"
-                >
-                  <Plus size={13} /> Add reason
-                </button>
-              )}
             </div>
           </div>
           <div className="h-px bg-border-strong" />

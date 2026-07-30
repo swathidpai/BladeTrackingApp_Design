@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { Plus } from "lucide-react";
-import { Job, REASONS } from "../../data";
+import { Job } from "../../data";
 import { longLabel } from "../../utils";
+import { useStore } from "../../store";
 import { Modal } from "../ui/Modal";
 import { Button } from "../ui/Button";
 import { Pill } from "../ui/Pill";
@@ -16,9 +16,7 @@ interface Props {
 
 export function DayConfirmModal({ day, mode, jobs, onClose, onConfirm }: Props) {
   const [selected, setSelected] = useState<string[]>([]);
-  const [extra, setExtra] = useState<string[]>([]);
-  const [newReason, setNewReason] = useState("");
-  const [adding, setAdding] = useState(false);
+  const cancellationReasons = useStore((s) => s.cancellationReasons);
 
   const affected = jobs.filter((j) => j.status === "planned");
   const skipped = jobs.length - affected.length;
@@ -74,41 +72,15 @@ export function DayConfirmModal({ day, mode, jobs, onClose, onConfirm }: Props) 
               This reason will be applied to all {affected.length} jobs.
             </p>
             <div className="flex flex-wrap gap-2">
-              {[...REASONS, ...extra].map((r) => (
-                <Pill key={r} label={r} selected={selected.includes(r)} onClick={() => toggle(r)} />
+              {cancellationReasons.map((r) => (
+                <Pill
+                  key={r.id}
+                  label={r.name}
+                  selected={selected.includes(r.name)}
+                  onClick={() => toggle(r.name)}
+                  dotColor={r.color}
+                />
               ))}
-              {adding ? (
-                <span className="inline-flex items-center gap-1 rounded-full border border-accent-primary bg-surface-raised px-2 py-0.5">
-                  <input
-                    autoFocus
-                    value={newReason}
-                    onChange={(e) => setNewReason(e.target.value)}
-                    className="w-20 bg-transparent text-[13px] text-text-primary focus:outline-none"
-                  />
-                  <button
-                    type="button"
-                    className="text-accent-primary"
-                    onClick={() => {
-                      if (newReason.trim()) {
-                        setExtra((p) => [...p, newReason.trim()]);
-                        setSelected((p) => [...p, newReason.trim()]);
-                      }
-                      setNewReason("");
-                      setAdding(false);
-                    }}
-                  >
-                    <Plus size={14} />
-                  </button>
-                </span>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setAdding(true)}
-                  className="inline-flex items-center gap-1 rounded-full border border-accent-primary/60 px-3 py-1 text-[13px] font-medium text-accent-primary transition hover:bg-accent-dim"
-                >
-                  <Plus size={13} /> Add reason
-                </button>
-              )}
             </div>
           </div>
         </>
