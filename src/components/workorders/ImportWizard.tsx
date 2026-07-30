@@ -355,17 +355,23 @@ function Step2({
   hasDuplicateMapping: boolean;
 }) {
   const [activeField, setActiveField] = useState<MappableField | null>(null);
+  const headerRefs = useRef<Record<string, HTMLTableCellElement | null>>({});
 
   const fieldForHeader = (header: string): MappableField | null => {
     for (const f of FIELD_ORDER) if (mapping[f] === header) return f;
     return null;
   };
 
-  function example(field: MappableField): string | null {
+  function example(field: MappableField): { col: string; value: string } | null {
     const col = mapping[field];
     if (!col) return null;
     const value = parsed.rows[0]?.[col];
-    return value ? `${col} → "${value}"` : null;
+    return value ? { col, value } : null;
+  }
+
+  // Bring a newly-mapped column into view if it's scrolled out of the preview.
+  function scrollColumnIntoView(header: string) {
+    headerRefs.current[header]?.scrollIntoView({ behavior: "smooth", inline: "nearest", block: "nearest" });
   }
 
   return (
@@ -382,6 +388,9 @@ function Step2({
                 return (
                   <th
                     key={h}
+                    ref={(el) => {
+                      headerRefs.current[h] = el;
+                    }}
                     className={`whitespace-nowrap border px-3 py-2 font-medium ${
                       tone ? `${tone.border} ${tone.bg} ${tone.text}` : "border-transparent"
                     } ${active ? "border-2" : ""}`}
@@ -434,7 +443,10 @@ function Step2({
           headers={parsed.headers}
           active={activeField === "name"}
           onFocus={() => setActiveField("name")}
-          onChange={(v) => setMapping((m) => ({ ...m, name: v }))}
+          onChange={(v) => {
+            setMapping((m) => ({ ...m, name: v }));
+            scrollColumnIntoView(v);
+          }}
         />
         <MappingRow
           field="number"
@@ -444,7 +456,10 @@ function Step2({
           headers={parsed.headers}
           active={activeField === "number"}
           onFocus={() => setActiveField("number")}
-          onChange={(v) => setMapping((m) => ({ ...m, number: v }))}
+          onChange={(v) => {
+            setMapping((m) => ({ ...m, number: v }));
+            scrollColumnIntoView(v);
+          }}
         />
         <MappingRow
           field="functionalLocation"
@@ -454,12 +469,15 @@ function Step2({
           headers={parsed.headers}
           active={activeField === "functionalLocation"}
           onFocus={() => setActiveField("functionalLocation")}
-          onChange={(v) => setMapping((m) => ({ ...m, functionalLocation: v }))}
+          onChange={(v) => {
+            setMapping((m) => ({ ...m, functionalLocation: v }));
+            scrollColumnIntoView(v);
+          }}
         >
           {derivedExample && (
-            <p className="mt-1.5 text-[12px] text-text-muted">
+            <p className="mt-1.5 pl-52 text-[13px] text-text-secondary">
               Asset and sub-asset are read from this →{" "}
-              <span className="text-text-secondary">
+              <span className="font-medium text-text-primary">
                 {derivedExample.asset || "—"} · {derivedExample.subAsset || "—"}
               </span>
             </p>
@@ -491,7 +509,7 @@ function MappingRow({
   field: MappableField;
   label: string;
   value: string | null;
-  example: string | null;
+  example: { col: string; value: string } | null;
   headers: string[];
   active: boolean;
   onFocus: () => void;
@@ -524,9 +542,11 @@ function MappingRow({
         </div>
       </div>
       {value && example ? (
-        <p className="mt-1.5 pl-52 text-[12px] text-text-muted">{example}</p>
+        <p className="mt-1.5 pl-52 text-[13px] text-text-secondary">
+          {example.col} → <span className="font-medium text-text-primary">"{example.value}"</span>
+        </p>
       ) : !value ? (
-        <p className="mt-1.5 pl-52 text-[12px] text-text-muted">
+        <p className="mt-1.5 pl-52 text-[13px] font-medium text-cancelled">
           We couldn't confidently match this — please choose a column.
         </p>
       ) : null}
