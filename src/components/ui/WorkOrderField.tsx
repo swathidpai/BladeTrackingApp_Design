@@ -28,15 +28,19 @@ export function WorkOrderField({ workOrder, onChange, workType }: Props) {
     description: w.asset,
   }));
 
+  const invalid = !!workOrder && workOrder.length !== 6;
+
   return (
     <div className="grid grid-cols-2 gap-3">
       <Field label="SAP work order number">
         <TextInput
           value={workOrder ?? ""}
           onChange={(e) => onChange(e.target.value.replace(/\D/g, "") || null)}
-          placeholder="e.g. 40021874"
+          placeholder="e.g. 400218"
           inputMode="numeric"
+          className={invalid ? "border-attention focus:border-attention" : ""}
         />
+        {invalid && <p className="mt-1.5 text-[12px] text-attention">Must be exactly 6 digits.</p>}
       </Field>
       <Field label="Link work order">
         <Dropdown

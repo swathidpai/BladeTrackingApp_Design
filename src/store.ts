@@ -14,6 +14,7 @@ interface Store {
   addWorkOrder: (wo: Omit<WorkOrder, "id" | "createdAt">) => WorkOrder;
   addWorkOrders: (wos: Omit<WorkOrder, "id" | "createdAt">[]) => WorkOrder[];
   toggleWorkOrderStatus: (id: string) => void;
+  setWorkOrderStatusByNumber: (number: string, status: WorkOrder["status"]) => void;
   /** Removes the work order and cascades to every job linked to it. Returns what was removed, for undo. */
   deleteWorkOrder: (id: string) => { workOrder: WorkOrder | null; removedJobs: Job[] };
   /** Undo counterpart to deleteWorkOrder. */
@@ -52,6 +53,10 @@ export const useStore = create<Store>()(
           workOrders: s.workOrders.map((w) =>
             w.id === id ? { ...w, status: w.status === "open" ? "complete" : "open" } : w,
           ),
+        })),
+      setWorkOrderStatusByNumber: (number, status) =>
+        set((s) => ({
+          workOrders: s.workOrders.map((w) => (w.number === number ? { ...w, status } : w)),
         })),
       deleteWorkOrder: (id) => {
         const workOrder = get().workOrders.find((w) => w.id === id) ?? null;

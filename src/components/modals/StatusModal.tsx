@@ -17,12 +17,14 @@ import { Dropdown, Field, TextInput } from "../ui/Dropdown";
 import { Stepper } from "../ui/Stepper";
 import { Accordion } from "../ui/Accordion";
 import { WorkOrderField } from "../ui/WorkOrderField";
+import { Switch } from "../ui/Switch";
+import { useStore } from "../../store";
 
 interface Props {
   job: Job;
   initialBranch?: JobStatus;
   onClose: () => void;
-  onSave: (patch: Partial<Job>, status: JobStatus, opts?: { closeWorkOrder?: boolean }) => void;
+  onSave: (patch: Partial<Job>, status: JobStatus, opts?: { workOrderComplete?: boolean }) => void;
 }
 
 type Branch = "planned" | "complete" | "cancelled";
@@ -56,6 +58,10 @@ export function StatusModal({ job, initialBranch, onClose, onSave }: Props) {
   const [addingType, setAddingType] = useState(false);
   const [newType, setNewType] = useState("");
   const [extraTypes, setExtraTypes] = useState<string[]>([]);
+
+  const workOrders = useStore((s) => s.workOrders);
+  const linkedWorkOrder = job.workOrder ? workOrders.find((w) => w.number === job.workOrder) : undefined;
+  const [markComplete, setMarkComplete] = useState(linkedWorkOrder?.status === "complete");
 
   // "More details" defaults open on Planned, collapsed on Successful/Cancelled.
   useEffect(() => {
@@ -96,7 +102,7 @@ export function StatusModal({ job, initialBranch, onClose, onSave }: Props) {
     ...extraTypes.map((t) => ({ value: t, label: t, description: "Custom work type" })),
   ];
 
-  const title = asset && subAsset ? `${asset} · ${subAsset} · ${workType}` : jobName;
+  const title = asset && subAsset ? `${asset} ${subAsset} · ${jobName}` : jobName;
 
   function save() {
     onSave(
@@ -113,25 +119,7 @@ export function StatusModal({ job, initialBranch, onClose, onSave }: Props) {
         workOrder,
       },
       branch,
-    );
-  }
-
-  function saveAndCloseWorkOrder() {
-    onSave(
-      {
-        name: jobName.trim() || job.name,
-        status: branch,
-        cancelReasons: [],
-        techs,
-        duration,
-        turbineStatus,
-        asset,
-        subAsset,
-        type: workType,
-        workOrder,
-      },
-      branch,
-      { closeWorkOrder: true },
+      branch === "complete" && workOrder ? { workOrderComplete: markComplete } : undefined,
     );
   }
 
@@ -146,20 +134,9 @@ export function StatusModal({ job, initialBranch, onClose, onSave }: Props) {
           <Button variant="ghost" onClick={onClose}>
             Cancel
           </Button>
-          {branch === "complete" ? (
-            <div className="flex items-center gap-2">
-              <Button variant="success-outline" onClick={saveAndCloseWorkOrder}>
-                Mark work order as complete
-              </Button>
-              <Button variant="primary" onClick={save}>
-                Save
-              </Button>
-            </div>
-          ) : (
-            <Button variant="primary" onClick={save}>
-              Save
-            </Button>
-          )}
+          <Button variant="primary" onClick={save}>
+            Save
+          </Button>
         </>
       }
     >
@@ -308,6 +285,8 @@ export function StatusModal({ job, initialBranch, onClose, onSave }: Props) {
       {/* SAP work order — constant across Planned / Successful / Cancelled */}
       <WorkOrderField workOrder={workOrder} onChange={setWorkOrder} workType={workType} />
 
+      <div className="h-px bg-border-strong" />
+
       {/* More details accordion */}
       <Accordion label="More details" open={moreOpen} onToggle={() => setMoreOpen((o) => !o)}>
         <Field label="Job name">
@@ -332,6 +311,21 @@ export function StatusModal({ job, initialBranch, onClose, onSave }: Props) {
           </Field>
         </div>
       </Accordion>
+
+      {/* Successful only — two-way flag with the linked work order's own status */}
+      {branch === "complete" && (
+        <div className="flex items-center justify-between rounded-[6px] border border-border-default px-3 py-2.5">
+          <div>
+            <p className="text-[13px] font-medium text-text-primary">Mark work order as complete</p>
+            <p className="text-[12px] text-text-muted">
+              {workOrder
+                ? "Updates the linked work order's status — doesn't affect this job's outcome."
+                : "Link a work order above to enable this."}
+            </p>
+          </div>
+          <Switch checked={markComplete} onChange={setMarkComplete} disabled={!workOrder} />
+        </div>
+      )}
     </Modal>
   );
 }

@@ -35,6 +35,7 @@ export default function App() {
   const navigate = useNavigate();
   const jobs = useStore((s) => s.jobs);
   const setJobs = useStore((s) => s.setJobs);
+  const setWorkOrderStatusByNumber = useStore((s) => s.setWorkOrderStatusByNumber);
   const [weekOffset, setWeekOffset] = useState(0);
   const weekDays = useMemo(() => weekWindow(weekOffset), [weekOffset]);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -72,20 +73,28 @@ export default function App() {
   }
 
   // Unified status modal (opened from a card's status button).
-  function saveStatus(patch: Partial<Job>, status: JobStatus, opts?: { closeWorkOrder?: boolean }) {
+  function saveStatus(patch: Partial<Job>, status: JobStatus, opts?: { workOrderComplete?: boolean }) {
     if (!statusModal) return;
     const before = jobs;
+    const workOrdersBefore = useStore.getState().workOrders;
     updateJob(statusModal.job.id, patch);
+    const workOrderNumber = patch.workOrder ?? statusModal.job.workOrder;
+    if (opts?.workOrderComplete !== undefined && workOrderNumber) {
+      setWorkOrderStatusByNumber(workOrderNumber, opts.workOrderComplete ? "complete" : "open");
+    }
     const name = patch.name ?? statusModal.job.name;
     const message =
       status === "complete"
-        ? opts?.closeWorkOrder
-          ? `${name} marked successful — work order closed`
+        ? opts?.workOrderComplete
+          ? `${name} marked successful — work order marked complete`
           : `${name} marked successful`
         : status === "cancelled"
           ? `${name} cancelled`
           : `${name} set to planned`;
-    pushToast(message, () => setJobs(before));
+    pushToast(message, () => {
+      setJobs(before);
+      useStore.setState({ workOrders: workOrdersBefore });
+    });
     setStatusModal(null);
   }
 
