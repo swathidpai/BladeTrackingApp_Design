@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { DndContext, type DragEndEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { useLocation, useNavigate } from "react-router-dom";
 import { AlertTriangle, Plus, Upload } from "lucide-react";
-import { JOB_TYPES, Job, WorkOrder, nextId } from "../../data";
+import { Job, WorkOrder, nextId } from "../../data";
 import { dateNumber, fullDayName, todayWindow } from "../../utils";
 import { useStore } from "../../store";
 import { Button } from "../ui/Button";
@@ -19,6 +19,7 @@ export function WorkOrdersPage() {
   const location = useLocation();
   const jobs = useStore((s) => s.jobs);
   const workOrders = useStore((s) => s.workOrders);
+  const jobTypes = useStore((s) => s.jobTypes);
   const addJob = useStore((s) => s.addJob);
   const updateJob = useStore((s) => s.updateJob);
   const deleteJobAction = useStore((s) => s.deleteJob);
@@ -67,7 +68,7 @@ export function WorkOrdersPage() {
   }, [jobs]);
 
   function planWorkOrder(wo: WorkOrder, day: string) {
-    const defaults = wo.type ? JOB_TYPES.find((t) => t.name === wo.type)?.defaults : undefined;
+    const defaults = wo.type ? jobTypes.find((t) => t.name === wo.type)?.defaults : undefined;
     const job: Job = {
       id: nextId(),
       name: wo.name,

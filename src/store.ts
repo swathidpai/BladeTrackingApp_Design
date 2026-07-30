@@ -1,10 +1,20 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { Job, SEED_JOBS, WORK_ORDERS, WorkOrder, nextWorkOrderId } from "./data";
+import {
+  Job,
+  JobTypeDef,
+  SEED_JOBS,
+  SEED_JOB_TYPES,
+  WORK_ORDERS,
+  WorkOrder,
+  nextJobTypeId,
+  nextWorkOrderId,
+} from "./data";
 
 interface Store {
   jobs: Job[];
   workOrders: WorkOrder[];
+  jobTypes: JobTypeDef[];
 
   setJobs: (updater: Job[] | ((prev: Job[]) => Job[])) => void;
   updateJob: (id: string, patch: Partial<Job>) => void;
@@ -19,6 +29,11 @@ interface Store {
   deleteWorkOrder: (id: string) => { workOrder: WorkOrder | null; removedJobs: Job[] };
   /** Undo counterpart to deleteWorkOrder. */
   restoreWorkOrder: (workOrder: WorkOrder, jobs: Job[]) => void;
+
+  addJobType: (jt: Omit<JobTypeDef, "id">) => JobTypeDef;
+  updateJobType: (id: string, patch: Partial<Omit<JobTypeDef, "id">>) => void;
+  /** Removes the job type from the picker only — jobs/work orders already using its name keep it. */
+  deleteJobType: (id: string) => void;
 }
 
 export const useStore = create<Store>()(
@@ -26,6 +41,7 @@ export const useStore = create<Store>()(
     (set, get) => ({
       jobs: SEED_JOBS,
       workOrders: WORK_ORDERS,
+      jobTypes: SEED_JOB_TYPES,
 
       setJobs: (updater) =>
         set((s) => ({ jobs: typeof updater === "function" ? updater(s.jobs) : updater })),
@@ -72,6 +88,15 @@ export const useStore = create<Store>()(
           workOrders: [...s.workOrders, workOrder],
           jobs: [...s.jobs, ...jobs],
         })),
+
+      addJobType: (jt) => {
+        const record: JobTypeDef = { ...jt, id: nextJobTypeId() };
+        set((s) => ({ jobTypes: [...s.jobTypes, record] }));
+        return record;
+      },
+      updateJobType: (id, patch) =>
+        set((s) => ({ jobTypes: s.jobTypes.map((t) => (t.id === id ? { ...t, ...patch } : t)) })),
+      deleteJobType: (id) => set((s) => ({ jobTypes: s.jobTypes.filter((t) => t.id !== id) })),
     }),
     { name: "windai-blade-tracking" },
   ),

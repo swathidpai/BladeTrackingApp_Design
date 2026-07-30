@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { AlertTriangle, Plus } from "lucide-react";
-import { Job, JobType, JOB_TYPES, TurbineStatus, nextId } from "../../data";
+import { AlertTriangle } from "lucide-react";
+import { Job, JobType, TurbineStatus, nextId } from "../../data";
 import { longLabel, missingFields } from "../../utils";
+import { useStore } from "../../store";
 import { Modal } from "../ui/Modal";
 import { Button } from "../ui/Button";
 import { Dropdown, Field, TextInput } from "../ui/Dropdown";
@@ -17,6 +18,7 @@ interface Props {
 
 export function JobModal({ day, job, onClose, onSave }: Props) {
   const editing = !!job;
+  const jobTypes = useStore((s) => s.jobTypes);
   const [name, setName] = useState(job?.name ?? "");
   const [type, setType] = useState<JobType | null>(job?.type ?? null);
   const [techs, setTechs] = useState<number | null>(job?.techs ?? null);
@@ -24,14 +26,11 @@ export function JobModal({ day, job, onClose, onSave }: Props) {
   const [turbine, setTurbine] = useState(job?.turbine ?? "");
   const [turbineStatus, setTurbineStatus] = useState<TurbineStatus | null>(job?.turbineStatus ?? null);
   const [workOrder, setWorkOrder] = useState<string | null>(job?.workOrder ?? null);
-  const [addingType, setAddingType] = useState(false);
-  const [newType, setNewType] = useState("");
-  const [extraTypes, setExtraTypes] = useState<string[]>([]);
 
   const draft: Job = {
     id: job?.id ?? nextId(),
     name: name.trim() || "Untitled job",
-    type: (type ?? "Blade Repair") as JobType,
+    type: type ?? jobTypes[0]?.name ?? "Blade Repair",
     techs,
     duration,
     turbine: turbine.trim() || "—",
@@ -44,10 +43,7 @@ export function JobModal({ day, job, onClose, onSave }: Props) {
   };
   const missing = missingFields(draft);
 
-  const typeOptions = [
-    ...JOB_TYPES.map((t) => ({ value: t.name, label: t.name, description: t.description })),
-    ...extraTypes.map((t) => ({ value: t, label: t, description: "Custom job type" })),
-  ];
+  const typeOptions = jobTypes.map((t) => ({ value: t.name, label: t.name, description: t.description }));
 
   return (
     <Modal
@@ -73,45 +69,6 @@ export function JobModal({ day, job, onClose, onSave }: Props) {
           onChange={(v) => setType(v as JobType)}
           options={typeOptions}
           placeholder="Select a job type"
-          footer={
-            addingType ? (
-              <div className="flex items-center gap-1 px-2 py-1.5">
-                <TextInput
-                  autoFocus
-                  value={newType}
-                  onChange={(e) => setNewType(e.target.value)}
-                  placeholder="New job type"
-                  className="h-8"
-                />
-                <button
-                  type="button"
-                  className="text-accent-primary"
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    if (newType.trim()) {
-                      setExtraTypes((p) => [...p, newType.trim()]);
-                      setType(newType.trim() as JobType);
-                    }
-                    setNewType("");
-                    setAddingType(false);
-                  }}
-                >
-                  <Plus size={16} />
-                </button>
-              </div>
-            ) : (
-              <button
-                type="button"
-                className="flex w-full items-center gap-1.5 px-3 py-2 text-left text-sm text-accent-primary transition hover:bg-surface-active"
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  setAddingType(true);
-                }}
-              >
-                <Plus size={14} /> Add job type
-              </button>
-            )
-          }
         />
       </Field>
 

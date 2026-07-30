@@ -1,15 +1,6 @@
 import { useEffect, useState } from "react";
 import { Check, Plus } from "lucide-react";
-import {
-  ASSETS,
-  Job,
-  JobStatus,
-  JOB_TYPES,
-  JobType,
-  REASONS,
-  SUB_ASSETS,
-  TurbineStatus,
-} from "../../data";
+import { ASSETS, Job, JobStatus, JobType, REASONS, SUB_ASSETS, TurbineStatus } from "../../data";
 import { Modal } from "../ui/Modal";
 import { Button } from "../ui/Button";
 import { Pill } from "../ui/Pill";
@@ -55,11 +46,9 @@ export function StatusModal({ job, initialBranch, onClose, onSave }: Props) {
   const [asset, setAsset] = useState<string | null>(job.asset ?? null);
   const [subAsset, setSubAsset] = useState<string | null>(job.subAsset ?? null);
   const [workType, setWorkType] = useState<JobType>(job.type);
-  const [addingType, setAddingType] = useState(false);
-  const [newType, setNewType] = useState("");
-  const [extraTypes, setExtraTypes] = useState<string[]>([]);
 
   const workOrders = useStore((s) => s.workOrders);
+  const jobTypes = useStore((s) => s.jobTypes);
   const linkedWorkOrder = job.workOrder ? workOrders.find((w) => w.number === job.workOrder) : undefined;
   const [markComplete, setMarkComplete] = useState(linkedWorkOrder?.status === "complete");
 
@@ -88,7 +77,7 @@ export function StatusModal({ job, initialBranch, onClose, onSave }: Props) {
   // defaults — but never overwrites a field the user has hand-edited.
   function pickWorkType(t: JobType) {
     setWorkType(t);
-    const d = JOB_TYPES.find((j) => j.name === t)?.defaults;
+    const d = jobTypes.find((j) => j.name === t)?.defaults;
     if (d) {
       if (!edited.has("techs")) setTechs(d.techs);
       if (!edited.has("duration")) setDuration(d.duration);
@@ -97,10 +86,7 @@ export function StatusModal({ job, initialBranch, onClose, onSave }: Props) {
   }
 
   const allReasons = [...REASONS, ...extra];
-  const typeOptions = [
-    ...JOB_TYPES.map((t) => ({ value: t.name, label: t.name, description: t.description })),
-    ...extraTypes.map((t) => ({ value: t, label: t, description: "Custom work type" })),
-  ];
+  const typeOptions = jobTypes.map((t) => ({ value: t.name, label: t.name, description: t.description }));
 
   const title = asset && subAsset ? `${asset} ${subAsset} · ${jobName}` : jobName;
 
@@ -240,45 +226,6 @@ export function StatusModal({ job, initialBranch, onClose, onSave }: Props) {
           onChange={(v) => pickWorkType(v as JobType)}
           options={typeOptions}
           placeholder="Select work type"
-          footer={
-            addingType ? (
-              <div className="flex items-center gap-1 px-2 py-1.5">
-                <TextInput
-                  autoFocus
-                  value={newType}
-                  onChange={(e) => setNewType(e.target.value)}
-                  placeholder="New work type"
-                  className="h-8"
-                />
-                <button
-                  type="button"
-                  className="text-accent-primary"
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    if (newType.trim()) {
-                      setExtraTypes((p) => [...p, newType.trim()]);
-                      pickWorkType(newType.trim() as JobType);
-                    }
-                    setNewType("");
-                    setAddingType(false);
-                  }}
-                >
-                  <Plus size={16} />
-                </button>
-              </div>
-            ) : (
-              <button
-                type="button"
-                className="flex w-full items-center gap-1.5 px-3 py-2 text-left text-sm text-accent-primary transition hover:bg-surface-active"
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  setAddingType(true);
-                }}
-              >
-                <Plus size={14} /> Add work type
-              </button>
-            )
-          }
         />
       </Field>
 

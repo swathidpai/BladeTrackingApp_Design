@@ -12,7 +12,7 @@ import {
   type DragStartEvent,
 } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
-import { Job, JobStatus, nextId } from "./data";
+import { ASSETS, Job, JobStatus, REASONS, SUB_ASSETS, nextId } from "./data";
 import { fullDayName, dateNumber, monthName, needsAttention, weekWindow } from "./utils";
 import { useStore } from "./store";
 import { NavRail } from "./components/layout/NavRail";
@@ -28,6 +28,10 @@ import { ResolveScreen } from "./components/resolve/ResolveScreen";
 import { WorkOrdersPage } from "./components/workorders/WorkOrdersPage";
 import { ImportWizard } from "./components/workorders/ImportWizard";
 import { ToastStack, type ToastData } from "./components/ui/Toast";
+import { SettingsLanding } from "./components/settings/SettingsLanding";
+import { JobTypesListPage } from "./components/settings/JobTypesListPage";
+import { JobTypeFormPage } from "./components/settings/JobTypeFormPage";
+import { SimpleListPage } from "./components/settings/SimpleListPage";
 
 let toastSeq = 0;
 
@@ -307,6 +311,40 @@ export default function App() {
                     state: { toast: `${count} work order${count === 1 ? "" : "s"} imported` },
                   })
                 }
+              />
+            }
+          />
+          <Route path="/settings" element={<SettingsLanding />} />
+          <Route path="/settings/job-types" element={<JobTypesListPage />} />
+          <Route path="/settings/job-types/new" element={<JobTypeFormPage />} />
+          <Route path="/settings/job-types/:id" element={<JobTypeFormPage />} />
+          <Route
+            path="/settings/assets"
+            element={
+              <SimpleListPage
+                title="Assets"
+                subtitle="Equipment/assets required to track tasks in this project."
+                items={ASSETS}
+              />
+            }
+          />
+          <Route
+            path="/settings/sub-assets"
+            element={
+              <SimpleListPage
+                title="Sub Assets"
+                subtitle="Components that belong to a parent asset."
+                items={SUB_ASSETS}
+              />
+            }
+          />
+          <Route
+            path="/settings/cancellation-reasons"
+            element={
+              <SimpleListPage
+                title="Cancellation Reasons"
+                subtitle="Reasons a job can be cancelled."
+                items={REASONS}
               />
             }
           />

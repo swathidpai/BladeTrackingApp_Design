@@ -1,4 +1,5 @@
 import { Check } from "lucide-react";
+import { useStore } from "../../store";
 
 type Tone = "accent" | "success" | "danger";
 
@@ -34,10 +35,12 @@ export function Pill({ label, selected = false, onClick, className = "", tone = 
   );
 }
 
-/** Static job-type tag. */
+/** Static job-type tag — tinted with the job type's colour from Settings > Job Types. */
 export function TypeTag({ label }: { label: string }) {
+  const color = useStore((s) => s.jobTypes.find((t) => t.name === label)?.color);
   return (
-    <span className="inline-flex items-center rounded-full bg-accent-dim px-2 py-0.5 text-[11px] font-medium text-accent-primary">
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-accent-dim px-2 py-0.5 text-[11px] font-medium text-accent-primary">
+      {color && <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: color }} />}
       {label}
     </span>
   );

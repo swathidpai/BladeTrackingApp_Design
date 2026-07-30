@@ -1,4 +1,6 @@
-export type JobType = "Blade Repair" | "Blade Tip Repair" | "Blade Painting" | "Tower Cleaning";
+// Job types are user-managed (Settings > Job Types), so this is any string —
+// the canonical set lives in the store's `jobTypes`, seeded from SEED_JOB_TYPES below.
+export type JobType = string;
 export type JobStatus = "planned" | "complete" | "cancelled";
 export type TurbineStatus = "Online" | "Offline";
 
@@ -66,28 +68,69 @@ export interface WorkTypeDefaults {
   turbineStatus: TurbineStatus;
 }
 
-export const JOB_TYPES: {
-  name: JobType;
+/** A job type as configured in Settings — the source of the "work type" picker everywhere. */
+export interface JobTypeDef {
+  id: string;
+  name: string;
+  key: string; // slug/unique id, auto-filled from the name, editable
+  color: string;
   description: string;
   defaults: WorkTypeDefaults;
-}[] = [
+}
+
+export const JOB_TYPE_COLORS: { name: string; value: string }[] = [
+  { name: "Blue", value: "#84B8FF" },
+  { name: "Pink", value: "#F472B6" },
+  { name: "Violet", value: "#A78BFA" },
+  { name: "Green", value: "#34D399" },
+  { name: "Amber", value: "#FBBF24" },
+  { name: "Cyan", value: "#22D3EE" },
+  { name: "Orange", value: "#FB923C" },
+  { name: "Rose", value: "#FB7185" },
+];
+
+/** Job Type Key auto-fill: slugify the name into an uppercase, underscore id. */
+export function slugifyJobTypeKey(name: string): string {
+  return name
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
+let jtN = 0;
+const jtUid = () => `jt-seed-${++jtN}`;
+
+export const SEED_JOB_TYPES: JobTypeDef[] = [
   {
+    id: jtUid(),
     name: "Blade Repair",
+    key: "BLADE_REPAIR",
+    color: "#84B8FF",
     description: "Structural or laminate repair on a blade section",
     defaults: { techs: 3, duration: 8, turbineStatus: "Offline" },
   },
   {
+    id: jtUid(),
     name: "Blade Tip Repair",
+    key: "BLADE_TIP_REPAIR",
+    color: "#22D3EE",
     description: "Repair or reinforcement of the blade tip section",
     defaults: { techs: 2, duration: 6, turbineStatus: "Offline" },
   },
   {
+    id: jtUid(),
     name: "Blade Painting",
+    key: "BLADE_PAINTING",
+    color: "#A78BFA",
     description: "Recoating and leading-edge protection",
     defaults: { techs: 4, duration: 12, turbineStatus: "Offline" },
   },
   {
+    id: jtUid(),
     name: "Tower Cleaning",
+    key: "TOWER_CLEANING",
+    color: "#34D399",
     description: "Wash-down and inspection of the tower",
     defaults: { techs: 2, duration: 4, turbineStatus: "Online" },
   },
@@ -251,4 +294,8 @@ export function nextId() {
 
 export function nextWorkOrderId() {
   return uniqueId("wo");
+}
+
+export function nextJobTypeId() {
+  return uniqueId("jt");
 }

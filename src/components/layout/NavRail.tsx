@@ -47,12 +47,17 @@ export function NavRail() {
         })}
       </div>
       <Tooltip label="Settings" side="right">
-        <button
-          type="button"
-          className="flex h-11 w-11 items-center justify-center rounded-[8px] text-text-muted transition hover:text-text-primary"
-        >
-          <Settings size={20} />
-        </button>
+        <Link to="/settings" aria-label="Settings">
+          <span
+            className={`flex h-11 w-11 items-center justify-center rounded-[8px] transition ${
+              pathname.startsWith("/settings")
+                ? "bg-accent-dim text-accent-primary"
+                : "text-text-muted hover:text-text-primary"
+            }`}
+          >
+            <Settings size={20} />
+          </span>
+        </Link>
       </Tooltip>
     </nav>
   );
