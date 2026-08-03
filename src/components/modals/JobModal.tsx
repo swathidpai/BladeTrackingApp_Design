@@ -60,7 +60,7 @@ export function JobModal({ day, job, onClose, onSave }: Props) {
       }
     >
       <Field label="Job name">
-        <TextInput value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. C4 Blade C repair" />
+        <TextInput value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. T1 Blade C repair" />
       </Field>
 
       <Field label="Job type">
@@ -83,7 +83,7 @@ export function JobModal({ day, job, onClose, onSave }: Props) {
 
       <div className="grid grid-cols-2 gap-4">
         <Field label="Turbine">
-          <TextInput value={turbine} onChange={(e) => setTurbine(e.target.value)} placeholder="e.g. C4" />
+          <TextInput value={turbine} onChange={(e) => setTurbine(e.target.value)} placeholder="e.g. T1" />
         </Field>
         <Field label="Turbine status">
           <Dropdown

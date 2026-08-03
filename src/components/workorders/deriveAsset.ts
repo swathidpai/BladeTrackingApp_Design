@@ -10,9 +10,9 @@ export interface DerivedAsset {
 }
 
 /**
- * Functional Location is dot-separated: GBCMA.ROB01WF.<TURBINE>.<COMPONENT>.
+ * Functional Location is dot-separated: ACME.OWF01.<TURBINE>.<COMPONENT>.
  * Asset = the 3rd segment with the leading "G" and leading zeros stripped
- * (GA02 -> A2, GH04 -> H4). Sub-asset = the 4th segment mapped from its SAP
+ * (GT27 -> T27, GT04 -> T4). Sub-asset = the 4th segment mapped from its SAP
  * component code (MDA11 -> Blade A); an unrecognised code is shown as-is
  * rather than guessed. Missing segments resolve to blank, never throw.
  */

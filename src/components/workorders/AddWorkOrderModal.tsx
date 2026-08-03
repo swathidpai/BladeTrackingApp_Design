@@ -111,7 +111,7 @@ export function AddWorkOrderModal({ onClose }: Props) {
             setFlTouched(true);
             setFunctionalLocation(e.target.value);
           }}
-          placeholder="e.g. GBCMA.ROB01WF.GH04.MDA11"
+          placeholder="e.g. ACME.OWF01.GT04.MDA11"
         />
       </Field>
     </Modal>

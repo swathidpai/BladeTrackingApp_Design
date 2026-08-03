@@ -2,10 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import { ChevronDown, HelpCircle, Search } from "lucide-react";
 import wordmark from "../../imports/App_Logo.png";
 
-const SITES = ["Robin Rigg", "Walney", "Hornsea One", "Dogger Bank", "Beatrice"];
+const SITES = ["ACME", "Walney", "Hornsea One", "Dogger Bank", "Beatrice"];
 
 export function TopBar() {
-  const [site, setSite] = useState("Robin Rigg");
+  const [site, setSite] = useState("ACME");
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const ref = useRef<HTMLDivElement>(null);

@@ -59,7 +59,7 @@ const SUB_ASSET_CODES: Record<string, string> = {
 /** A plausible SAP-style functional location, suggested (and editable) when adding a work order. */
 export function suggestFunctionalLocation(asset: string, subAsset: string) {
   const code = SUB_ASSET_CODES[subAsset] ?? "MDA00";
-  return `GBCMA.ROB01WF.G${asset}.${code}`;
+  return `ACME.OWF01.G${asset}.${code}`;
 }
 
 export interface WorkTypeDefaults {
@@ -137,7 +137,7 @@ export const SEED_JOB_TYPES: JobTypeDef[] = [
 ];
 
 // Assets (turbines) and the sub-assets within each, for the status modal.
-export const ASSETS = ["C4", "C7", "D2", "A11", "B6"];
+export const ASSETS = ["T1", "T2", "T3", "T5", "T6"];
 export const SUB_ASSETS = ["Blade A", "Blade B", "Blade C", "Tower", "Nacelle", "Hub"];
 
 /** A cancellation reason as configured in Settings — the source of the "Reasons" pills everywhere. */
@@ -237,19 +237,19 @@ function seedWorkOrder(
 }
 
 export const WORK_ORDERS: WorkOrder[] = [
-  seedWorkOrder("40021874", "Blade C trailing edge crack", "C4", "Blade C"),
-  seedWorkOrder("40021912", "Leading edge erosion survey", "D2", "Blade A"),
-  seedWorkOrder("40022003", "Tower base corrosion clean", "A11", "Tower"),
-  seedWorkOrder("40022155", "Blade A lightning strike check", "B6", "Blade A"),
-  seedWorkOrder("40022210", "Recoat blade B outboard", "C7", "Blade B"),
-  seedWorkOrder("40022288", "Blade C repair follow-up", "C4", "Blade C"),
-  seedWorkOrder("40022351", "Blade B tip erosion repair", "D2", "Blade B"),
-  seedWorkOrder("40022410", "Tower wash-down inspection", "B6", "Tower"),
-  seedWorkOrder("40022455", "Blade C recoat leading edge", "C7", "Blade C"),
-  seedWorkOrder("24000155879", "GEV: 15 P1 Blade A Repair 2026", "A2", "Blade A", { source: "import" }),
-  seedWorkOrder("24000156044", "GEV: 12 P1 Blade C Repair 2026", "D6", "Blade C", { source: "import" }),
-  seedWorkOrder("24000156087", "GEV: 23 P1 Blade B Repair 2026", "E2", "Blade B", { source: "import" }),
-  seedWorkOrder("24000156090", "GEV: 26 P1 Blade C Repair 2026", "F5", "Blade C", {
+  seedWorkOrder("40021874", "Blade C trailing edge crack", "T1", "Blade C"),
+  seedWorkOrder("40021912", "Leading edge erosion survey", "T3", "Blade A"),
+  seedWorkOrder("40022003", "Tower base corrosion clean", "T5", "Tower"),
+  seedWorkOrder("40022155", "Blade A lightning strike check", "T6", "Blade A"),
+  seedWorkOrder("40022210", "Recoat blade B outboard", "T2", "Blade B"),
+  seedWorkOrder("40022288", "Blade C repair follow-up", "T1", "Blade C"),
+  seedWorkOrder("40022351", "Blade B tip erosion repair", "T3", "Blade B"),
+  seedWorkOrder("40022410", "Tower wash-down inspection", "T6", "Tower"),
+  seedWorkOrder("40022455", "Blade C recoat leading edge", "T2", "Blade C"),
+  seedWorkOrder("24000155879", "GEV: 15 P1 Blade A Repair 2026", "T27", "Blade A", { source: "import" }),
+  seedWorkOrder("24000156044", "GEV: 12 P1 Blade C Repair 2026", "T19", "Blade C", { source: "import" }),
+  seedWorkOrder("24000156087", "GEV: 23 P1 Blade B Repair 2026", "T55", "Blade B", { source: "import" }),
+  seedWorkOrder("24000156090", "GEV: 26 P1 Blade C Repair 2026", "T67", "Blade C", {
     source: "import",
     status: "complete",
   }),
@@ -275,72 +275,72 @@ const uid = () => `job-${++n}`;
 export const SEED_JOBS: Job[] = [
   // Monday 21 (yesterday) — some outcomes late, some flagged
   {
-    id: uid(), name: "C4 Blade C repair", type: "Blade Repair", techs: 2, duration: 8,
-    turbine: "C4", turbineStatus: "Offline", workOrder: "40021874", status: "complete",
+    id: uid(), name: "T1 Blade C repair", type: "Blade Repair", techs: 2, duration: 8,
+    turbine: "T1", turbineStatus: "Offline", workOrder: "40021874", status: "complete",
     cancelReasons: [], day: "2025-07-21", originalDay: "2025-07-21",
   },
   {
-    id: uid(), name: "D2 Blade A leading edge", type: "Blade Repair", techs: 3, duration: 12,
-    turbine: "D2", turbineStatus: "Offline", workOrder: "40021912", status: "cancelled",
+    id: uid(), name: "T3 Blade A leading edge", type: "Blade Repair", techs: 3, duration: 12,
+    turbine: "T3", turbineStatus: "Offline", workOrder: "40021912", status: "cancelled",
     cancelReasons: ["Rain", "Lightning", "Gust", "Wind"], day: "2025-07-21", originalDay: "2025-07-21",
   },
   {
-    id: uid(), name: "A11 Tower clean", type: "Tower Cleaning", techs: 2, duration: null,
-    turbine: "A11", turbineStatus: null, workOrder: null, status: "planned",
+    id: uid(), name: "T5 Tower clean", type: "Tower Cleaning", techs: 2, duration: null,
+    turbine: "T5", turbineStatus: null, workOrder: null, status: "planned",
     cancelReasons: [], day: "2025-07-21", originalDay: "2025-07-21",
   },
   {
-    id: uid(), name: "B6 Blade A LE check", type: "Blade Repair", techs: null, duration: 6,
-    turbine: "B6", turbineStatus: "Online", workOrder: "40022155", status: "planned",
+    id: uid(), name: "T6 Blade A LE check", type: "Blade Repair", techs: null, duration: 6,
+    turbine: "T6", turbineStatus: "Online", workOrder: "40022155", status: "planned",
     cancelReasons: [], day: "2025-07-21", originalDay: "2025-07-21",
   },
   // Tuesday 22 (today) — heavy
   {
-    id: uid(), name: "C4 Blade C repair", type: "Blade Repair", techs: 2, duration: 8,
-    turbine: "C4", turbineStatus: "Offline", workOrder: "40022288", status: "planned",
+    id: uid(), name: "T1 Blade C repair", type: "Blade Repair", techs: 2, duration: 8,
+    turbine: "T1", turbineStatus: "Offline", workOrder: "40022288", status: "planned",
     cancelReasons: [], day: "2025-07-22", originalDay: "2025-07-22",
   },
   {
-    id: uid(), name: "C7 Blade B recoat", type: "Blade Painting", techs: 4, duration: 12,
-    turbine: "C7", turbineStatus: "Offline", workOrder: "40022210", status: "complete",
+    id: uid(), name: "T2 Blade B recoat", type: "Blade Painting", techs: 4, duration: 12,
+    turbine: "T2", turbineStatus: "Offline", workOrder: "40022210", status: "complete",
     cancelReasons: [], day: "2025-07-22", originalDay: "2025-07-22",
   },
   {
-    id: uid(), name: "D2 Leading edge survey", type: "Blade Repair", techs: 2, duration: 4,
-    turbine: "D2", turbineStatus: "Online", workOrder: "40021912", status: "cancelled",
+    id: uid(), name: "T3 Leading edge survey", type: "Blade Repair", techs: 2, duration: 4,
+    turbine: "T3", turbineStatus: "Online", workOrder: "40021912", status: "cancelled",
     cancelReasons: ["Fog", "Wave Height"], day: "2025-07-22", originalDay: "2025-07-22",
   },
   {
-    id: uid(), name: "A11 Tower clean", type: "Tower Cleaning", techs: 3, duration: 6,
-    turbine: "A11", turbineStatus: "Online", workOrder: null, status: "planned",
+    id: uid(), name: "T5 Tower clean", type: "Tower Cleaning", techs: 3, duration: 6,
+    turbine: "T5", turbineStatus: "Online", workOrder: null, status: "planned",
     cancelReasons: [], day: "2025-07-22", originalDay: "2025-07-22",
   },
   // Wednesday 23 — heavy
   {
-    id: uid(), name: "B6 Blade A repair", type: "Blade Repair", techs: 3, duration: 8,
-    turbine: "B6", turbineStatus: "Offline", workOrder: "40022155", status: "planned",
+    id: uid(), name: "T6 Blade A repair", type: "Blade Repair", techs: 3, duration: 8,
+    turbine: "T6", turbineStatus: "Offline", workOrder: "40022155", status: "planned",
     cancelReasons: [], day: "2025-07-23", originalDay: "2025-07-23",
   },
   {
-    id: uid(), name: "C4 Tower clean", type: "Tower Cleaning", techs: 2, duration: 4,
-    turbine: "C4", turbineStatus: "Online", workOrder: "40022003", status: "planned",
+    id: uid(), name: "T1 Tower clean", type: "Tower Cleaning", techs: 2, duration: 4,
+    turbine: "T1", turbineStatus: "Online", workOrder: "40022003", status: "planned",
     cancelReasons: [], day: "2025-07-23", originalDay: "2025-07-23",
   },
   {
-    id: uid(), name: "C7 Blade B painting", type: "Blade Painting", techs: 4, duration: 12,
-    turbine: "C7", turbineStatus: "Offline", workOrder: "40022210", status: "planned",
+    id: uid(), name: "T2 Blade B painting", type: "Blade Painting", techs: 4, duration: 12,
+    turbine: "T2", turbineStatus: "Offline", workOrder: "40022210", status: "planned",
     cancelReasons: [], day: "2025-07-23", originalDay: "2025-07-23",
   },
   // Thursday 24 — light
   {
-    id: uid(), name: "D2 Blade C repair", type: "Blade Repair", techs: 2, duration: 6,
-    turbine: "D2", turbineStatus: "Online", workOrder: "40021912", status: "planned",
+    id: uid(), name: "T3 Blade C repair", type: "Blade Repair", techs: 2, duration: 6,
+    turbine: "T3", turbineStatus: "Online", workOrder: "40021912", status: "planned",
     cancelReasons: [], day: "2025-07-24", originalDay: "2025-07-24",
   },
   // Friday 25 — light
   {
-    id: uid(), name: "A11 Blade A recoat", type: "Blade Painting", techs: 3, duration: 8,
-    turbine: "A11", turbineStatus: "Offline", workOrder: null, status: "planned",
+    id: uid(), name: "T5 Blade A recoat", type: "Blade Painting", techs: 3, duration: 8,
+    turbine: "T5", turbineStatus: "Offline", workOrder: null, status: "planned",
     cancelReasons: [], day: "2025-07-25", originalDay: "2025-07-25",
   },
 ];
