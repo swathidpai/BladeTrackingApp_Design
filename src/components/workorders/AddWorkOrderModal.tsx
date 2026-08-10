@@ -5,6 +5,7 @@ import { useStore } from "../../store";
 import { Modal } from "../ui/Modal";
 import { Button } from "../ui/Button";
 import { Dropdown, Field, TextInput } from "../ui/Dropdown";
+import { TeamDropdown } from "../ui/TeamDropdown";
 
 interface Props {
   onClose: () => void;
@@ -12,6 +13,7 @@ interface Props {
 
 export function AddWorkOrderModal({ onClose }: Props) {
   const workOrders = useStore((s) => s.workOrders);
+  const teams = useStore((s) => s.teams);
   const addWorkOrder = useStore((s) => s.addWorkOrder);
 
   const [name, setName] = useState("");
@@ -20,6 +22,7 @@ export function AddWorkOrderModal({ onClose }: Props) {
   const [subAsset, setSubAsset] = useState<string | null>(null);
   const [functionalLocation, setFunctionalLocation] = useState("");
   const [flTouched, setFlTouched] = useState(false);
+  const [teamId, setTeamId] = useState<string | null>(null);
 
   const duplicate = number.trim() ? workOrders.some((w) => w.number === number.trim()) : false;
   const canSave = name.trim() && number.trim() && !duplicate;
@@ -43,6 +46,7 @@ export function AddWorkOrderModal({ onClose }: Props) {
       subAsset: subAsset ?? "",
       status: "open",
       source: "manual",
+      teamId,
     });
     onClose();
   }
@@ -113,6 +117,10 @@ export function AddWorkOrderModal({ onClose }: Props) {
           }}
           placeholder="e.g. ACME.OWF01.GT04.MDA11"
         />
+      </Field>
+
+      <Field label="Team">
+        <TeamDropdown teams={teams} value={teamId} onChange={setTeamId} />
       </Field>
     </Modal>
   );
