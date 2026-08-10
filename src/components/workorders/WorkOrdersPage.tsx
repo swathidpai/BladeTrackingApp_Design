@@ -84,6 +84,7 @@ export function WorkOrdersPage() {
       subAsset: wo.subAsset,
       day,
       originalDay: day,
+      teamId: wo.teamId ?? null,
     };
     addJob(job);
     pushToast(`${wo.name} planned for ${fullDayName(day)} ${dateNumber(day)}`, () => deleteJobAction(job.id));

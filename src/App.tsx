@@ -33,6 +33,8 @@ import { JobTypesListPage } from "./components/settings/JobTypesListPage";
 import { JobTypeFormPage } from "./components/settings/JobTypeFormPage";
 import { CancellationReasonsListPage } from "./components/settings/CancellationReasonsListPage";
 import { CancellationReasonFormPage } from "./components/settings/CancellationReasonFormPage";
+import { TeamsListPage } from "./components/settings/TeamsListPage";
+import { TeamFormPage } from "./components/settings/TeamFormPage";
 import { SimpleListPage } from "./components/settings/SimpleListPage";
 
 let toastSeq = 0;
@@ -343,6 +345,9 @@ export default function App() {
           <Route path="/settings/cancellation-reasons" element={<CancellationReasonsListPage />} />
           <Route path="/settings/cancellation-reasons/new" element={<CancellationReasonFormPage />} />
           <Route path="/settings/cancellation-reasons/:id" element={<CancellationReasonFormPage />} />
+          <Route path="/settings/teams" element={<TeamsListPage />} />
+          <Route path="/settings/teams/new" element={<TeamFormPage />} />
+          <Route path="/settings/teams/:id" element={<TeamFormPage />} />
         </Routes>
       </div>
 

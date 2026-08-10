@@ -1,4 +1,4 @@
-import { ArrowRight, Box, CalendarX, Home, Layers, LucideIcon, Wrench } from "lucide-react";
+import { ArrowRight, Box, CalendarX, Home, Layers, LucideIcon, Users, Wrench } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const CARDS: { key: string; icon: LucideIcon; title: string; description: string; to: string }[] = [
@@ -30,6 +30,13 @@ const CARDS: { key: string; icon: LucideIcon; title: string; description: string
     description: "Add and edit cancellation reasons for a job.",
     to: "/settings/cancellation-reasons",
   },
+  {
+    key: "teams",
+    icon: Users,
+    title: "Teams",
+    description: "Create and assign teams to work orders.",
+    to: "/settings/teams",
+  },
 ];
 
 export function SettingsLanding() {
@@ -44,7 +51,7 @@ export function SettingsLanding() {
         </div>
         <h1 className="mt-3 text-[28px] font-medium leading-none tracking-[-0.2px] text-text-primary">Settings</h1>
         <p className="mt-2 text-sm text-text-secondary">
-          Add job types, cancellation reasons, assets and sub-assets.
+          Add job types, cancellation reasons, assets, sub-assets and teams.
         </p>
 
         <div className="mt-8 grid grid-cols-3 gap-5">

@@ -19,6 +19,7 @@ export interface Job {
   subAsset?: string | null; // component within the asset
   day: string; // ISO date key yyyy-mm-dd — the day it currently sits on
   originalDay: string; // day it was first scheduled (for resolve backlog grouping)
+  teamId?: string | null; // inherited from the work order it was created from
 }
 
 export type WorkOrderStatus = "open" | "complete";
@@ -35,6 +36,33 @@ export interface WorkOrder {
   status: WorkOrderStatus;
   source: WorkOrderSource;
   createdAt: string; // ISO
+  teamId?: string | null; // assigned team; propagates to jobs created from this work order
+}
+
+export interface TeamMember {
+  email: string;
+  name: string; // looked up (or derived) from the email; editable
+}
+
+/** A team as configured in Settings — assignable to work orders, which propagates to their jobs. */
+export interface Team {
+  id: string;
+  name: string;
+  key: string; // slug/unique id, auto-filled from the name, editable
+  color: string;
+  description: string;
+  members: TeamMember[];
+  createdAt: string; // ISO
+}
+
+/** Best-effort friendly name from an email's local-part when no real directory lookup is wired up. */
+export function deriveNameFromEmail(email: string): string {
+  const local = email.split("@")[0] ?? "";
+  const words = local
+    .split(/[._-]+/)
+    .filter(Boolean)
+    .map((w) => w[0].toUpperCase() + w.slice(1).toLowerCase());
+  return words.length ? words.join(" ") : email;
 }
 
 /** Best-effort guess at a work order's job type from its name, for the linker match. */
@@ -212,6 +240,62 @@ export const SEED_CANCELLATION_REASONS: CancellationReasonDef[] = [
   },
 ];
 
+let teamN = 0;
+const teamUid = () => `team-seed-${++teamN}`;
+
+function seedMember(email: string): TeamMember {
+  return { email, name: deriveNameFromEmail(email) };
+}
+
+export const SEED_TEAMS: Team[] = [
+  {
+    id: teamUid(),
+    name: "Team A",
+    key: "TEAM_A",
+    color: "#84B8FF",
+    description: "Blade repair crew.",
+    members: [
+      seedMember("dave.fell@acme-energy.com"),
+      seedMember("priya.nair@acme-energy.com"),
+      seedMember("sam.okafor@acme-energy.com"),
+      seedMember("lena.brandt@acme-energy.com"),
+      seedMember("marco.silva@acme-energy.com"),
+    ],
+    createdAt: "2025-07-01T09:00:00.000Z",
+  },
+  {
+    id: teamUid(),
+    name: "Team B",
+    key: "TEAM_B",
+    color: "#34D399",
+    description: "Blade repair crew.",
+    members: [
+      seedMember("jon.aldridge@acme-energy.com"),
+      seedMember("mei.tanaka@acme-energy.com"),
+      seedMember("ines.costa@acme-energy.com"),
+    ],
+    createdAt: "2025-07-01T09:00:00.000Z",
+  },
+  {
+    id: teamUid(),
+    name: "Team C",
+    key: "TEAM_C",
+    color: "#A78BFA",
+    description: "Tower and nacelle crew.",
+    members: [
+      seedMember("omar.hassan@acme-energy.com"),
+      seedMember("freya.lund@acme-energy.com"),
+      seedMember("carlos.mendez@acme-energy.com"),
+      seedMember("anya.petrov@acme-energy.com"),
+      seedMember("liam.oconnor@acme-energy.com"),
+      seedMember("noor.siddiqui@acme-energy.com"),
+      seedMember("tobias.klein@acme-energy.com"),
+      seedMember("ruth.mwangi@acme-energy.com"),
+    ],
+    createdAt: "2025-07-01T09:00:00.000Z",
+  },
+];
+
 let woN = 0;
 const woUid = () => `wo-seed-${++woN}`;
 
@@ -372,4 +456,8 @@ export function nextJobTypeId() {
 
 export function nextCancellationReasonId() {
   return uniqueId("cr");
+}
+
+export function nextTeamId() {
+  return uniqueId("team");
 }
