@@ -7,10 +7,13 @@ import {
   SEED_CANCELLATION_REASONS,
   SEED_JOBS,
   SEED_JOB_TYPES,
+  SEED_TEAMS,
+  Team,
   WORK_ORDERS,
   WorkOrder,
   nextCancellationReasonId,
   nextJobTypeId,
+  nextTeamId,
   nextWorkOrderId,
 } from "./data";
 
@@ -19,6 +22,7 @@ interface Store {
   workOrders: WorkOrder[];
   jobTypes: JobTypeDef[];
   cancellationReasons: CancellationReasonDef[];
+  teams: Team[];
 
   setJobs: (updater: Job[] | ((prev: Job[]) => Job[])) => void;
   updateJob: (id: string, patch: Partial<Job>) => void;
@@ -43,6 +47,11 @@ interface Store {
   updateCancellationReason: (id: string, patch: Partial<Omit<CancellationReasonDef, "id">>) => void;
   /** Removes the reason from the picker only — jobs already cancelled for it keep the recorded name. */
   deleteCancellationReason: (id: string) => void;
+
+  addTeam: (t: Omit<Team, "id" | "createdAt">) => Team;
+  updateTeam: (id: string, patch: Partial<Omit<Team, "id" | "createdAt">>) => void;
+  /** Removes the team — work orders/jobs referencing it fall back to "No team", their work is untouched. */
+  deleteTeam: (id: string) => void;
 }
 
 export const useStore = create<Store>()(
@@ -52,6 +61,7 @@ export const useStore = create<Store>()(
       workOrders: WORK_ORDERS,
       jobTypes: SEED_JOB_TYPES,
       cancellationReasons: SEED_CANCELLATION_REASONS,
+      teams: SEED_TEAMS,
 
       setJobs: (updater) =>
         set((s) => ({ jobs: typeof updater === "function" ? updater(s.jobs) : updater })),
@@ -119,6 +129,20 @@ export const useStore = create<Store>()(
         })),
       deleteCancellationReason: (id) =>
         set((s) => ({ cancellationReasons: s.cancellationReasons.filter((r) => r.id !== id) })),
+
+      addTeam: (t) => {
+        const record: Team = { ...t, id: nextTeamId(), createdAt: new Date().toISOString() };
+        set((s) => ({ teams: [...s.teams, record] }));
+        return record;
+      },
+      updateTeam: (id, patch) =>
+        set((s) => ({ teams: s.teams.map((t) => (t.id === id ? { ...t, ...patch } : t)) })),
+      deleteTeam: (id) =>
+        set((s) => ({
+          teams: s.teams.filter((t) => t.id !== id),
+          workOrders: s.workOrders.map((w) => (w.teamId === id ? { ...w, teamId: undefined } : w)),
+          jobs: s.jobs.map((j) => (j.teamId === id ? { ...j, teamId: undefined } : j)),
+        })),
     }),
     { name: "windai-blade-tracking" },
   ),

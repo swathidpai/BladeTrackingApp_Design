@@ -1,4 +1,4 @@
-import { ArrowRight, Box, CalendarX, Home, Layers, LucideIcon, Wrench } from "lucide-react";
+import { ArrowRight, Box, CalendarX, Home, Layers, LucideIcon, Users, Wrench } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const CARDS: { key: string; icon: LucideIcon; title: string; description: string; to: string }[] = [
@@ -29,6 +29,13 @@ const CARDS: { key: string; icon: LucideIcon; title: string; description: string
     title: "Cancellation Reasons",
     description: "Add and edit cancellation reasons for a job.",
     to: "/settings/cancellation-reasons",
+  },
+  {
+    key: "teams",
+    icon: Users,
+    title: "Teams",
+    description: "Create and assign teams to work orders.",
+    to: "/settings/teams",
   },
 ];
 
