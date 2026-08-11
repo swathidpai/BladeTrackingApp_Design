@@ -154,7 +154,16 @@ export function JobCard({
             <Plus size={13} className="shrink-0" /> Link work order
           </button>
         )}
-        <div className="ml-auto shrink-0">
+        <div className="ml-auto flex shrink-0 items-center gap-1.5">
+          {team && (
+            <span
+              className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-medium"
+              style={{ backgroundColor: `${team.color}22`, color: team.color }}
+            >
+              <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: team.color }} />
+              {team.name}
+            </span>
+          )}
           <TypeTag label={job.type} />
         </div>
       </div>
