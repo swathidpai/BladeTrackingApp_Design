@@ -94,3 +94,12 @@ export function attentionReason(job: Job): string {
   if (stale) return "Day has passed with no outcome";
   return "";
 }
+
+/** Sentinel id for "No team" in the planner's Team filter selection. */
+export const NO_TEAM_FILTER_ID = "__no_team__";
+
+/** A job matches an empty selection (all teams) or one that includes its team (or the "no team" sentinel). */
+export function matchesTeamFilter(job: Job, selected: string[]): boolean {
+  if (selected.length === 0) return true;
+  return job.teamId ? selected.includes(job.teamId) : selected.includes(NO_TEAM_FILTER_ID);
+}

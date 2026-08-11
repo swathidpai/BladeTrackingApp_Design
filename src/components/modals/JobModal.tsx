@@ -7,6 +7,7 @@ import { Modal } from "../ui/Modal";
 import { Button } from "../ui/Button";
 import { Dropdown, Field, TextInput } from "../ui/Dropdown";
 import { Stepper } from "../ui/Stepper";
+import { TeamPicker } from "../ui/TeamPicker";
 import { WorkOrderField } from "../ui/WorkOrderField";
 
 interface Props {
@@ -19,6 +20,7 @@ interface Props {
 export function JobModal({ day, job, onClose, onSave }: Props) {
   const editing = !!job;
   const jobTypes = useStore((s) => s.jobTypes);
+  const teams = useStore((s) => s.teams);
   const [name, setName] = useState(job?.name ?? "");
   const [type, setType] = useState<JobType | null>(job?.type ?? null);
   const [techs, setTechs] = useState<number | null>(job?.techs ?? null);
@@ -26,6 +28,7 @@ export function JobModal({ day, job, onClose, onSave }: Props) {
   const [turbine, setTurbine] = useState(job?.turbine ?? "");
   const [turbineStatus, setTurbineStatus] = useState<TurbineStatus | null>(job?.turbineStatus ?? null);
   const [workOrder, setWorkOrder] = useState<string | null>(job?.workOrder ?? null);
+  const [teamId, setTeamId] = useState<string | null>(job?.teamId ?? null);
 
   const draft: Job = {
     id: job?.id ?? nextId(),
@@ -40,6 +43,7 @@ export function JobModal({ day, job, onClose, onSave }: Props) {
     cancelReasons: job?.cancelReasons ?? [],
     day: job?.day ?? day,
     originalDay: job?.originalDay ?? day,
+    teamId,
   };
   const missing = missingFields(draft);
 
@@ -99,6 +103,10 @@ export function JobModal({ day, job, onClose, onSave }: Props) {
       </div>
 
       <WorkOrderField workOrder={workOrder} onChange={setWorkOrder} workType={type} />
+
+      <Field label="Team">
+        <TeamPicker teams={teams} value={teamId} onChange={setTeamId} variant="field" />
+      </Field>
 
       {missing.length > 0 && (
         <div className="flex items-start gap-2 rounded-[6px] border border-attention/40 bg-attention-bg/60 px-3 py-2 text-[13px] text-text-secondary">

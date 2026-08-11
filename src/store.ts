@@ -23,6 +23,8 @@ interface Store {
   jobTypes: JobTypeDef[];
   cancellationReasons: CancellationReasonDef[];
   teams: Team[];
+  /** Planner Team filter selection — team ids (plus the "no team" sentinel); empty means all teams. Persisted. */
+  plannerTeamFilter: string[];
 
   setJobs: (updater: Job[] | ((prev: Job[]) => Job[])) => void;
   updateJob: (id: string, patch: Partial<Job>) => void;
@@ -50,10 +52,10 @@ interface Store {
 
   addTeam: (t: Omit<Team, "id" | "createdAt">) => Team;
   updateTeam: (id: string, patch: Partial<Omit<Team, "id" | "createdAt">>) => void;
-  /** Removes the team; any work orders/jobs referencing it fall back to "No team" rather than losing data. */
+  /** Removes the team; any jobs referencing it fall back to "No team" rather than losing data. */
   deleteTeam: (id: string) => void;
-  /** Assigns a work order's team and re-propagates it to every job already created from that work order. */
-  setWorkOrderTeam: (workOrderId: string, teamId: string | null) => void;
+
+  setPlannerTeamFilter: (ids: string[]) => void;
 }
 
 export const useStore = create<Store>()(
@@ -64,6 +66,7 @@ export const useStore = create<Store>()(
       jobTypes: SEED_JOB_TYPES,
       cancellationReasons: SEED_CANCELLATION_REASONS,
       teams: SEED_TEAMS,
+      plannerTeamFilter: [],
 
       setJobs: (updater) =>
         set((s) => ({ jobs: typeof updater === "function" ? updater(s.jobs) : updater })),
@@ -142,18 +145,10 @@ export const useStore = create<Store>()(
       deleteTeam: (id) =>
         set((s) => ({
           teams: s.teams.filter((t) => t.id !== id),
-          workOrders: s.workOrders.map((w) => (w.teamId === id ? { ...w, teamId: null } : w)),
           jobs: s.jobs.map((j) => (j.teamId === id ? { ...j, teamId: null } : j)),
         })),
-      setWorkOrderTeam: (workOrderId, teamId) => {
-        const workOrder = get().workOrders.find((w) => w.id === workOrderId);
-        set((s) => ({
-          workOrders: s.workOrders.map((w) => (w.id === workOrderId ? { ...w, teamId } : w)),
-          jobs: workOrder
-            ? s.jobs.map((j) => (j.workOrder === workOrder.number ? { ...j, teamId } : j))
-            : s.jobs,
-        }));
-      },
+
+      setPlannerTeamFilter: (ids) => set({ plannerTeamFilter: ids }),
     }),
     { name: "windai-blade-tracking" },
   ),

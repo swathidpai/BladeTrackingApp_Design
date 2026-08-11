@@ -20,14 +20,12 @@ export function WorkOrdersPage() {
   const jobs = useStore((s) => s.jobs);
   const workOrders = useStore((s) => s.workOrders);
   const jobTypes = useStore((s) => s.jobTypes);
-  const teams = useStore((s) => s.teams);
   const addJob = useStore((s) => s.addJob);
   const updateJob = useStore((s) => s.updateJob);
   const deleteJobAction = useStore((s) => s.deleteJob);
   const toggleWorkOrderStatus = useStore((s) => s.toggleWorkOrderStatus);
   const deleteWorkOrder = useStore((s) => s.deleteWorkOrder);
   const restoreWorkOrder = useStore((s) => s.restoreWorkOrder);
-  const setWorkOrderTeam = useStore((s) => s.setWorkOrderTeam);
 
   const [weekOffset, setWeekOffset] = useState(0);
   const days = useMemo(() => todayWindow(weekOffset), [weekOffset]);
@@ -86,7 +84,6 @@ export function WorkOrdersPage() {
       subAsset: wo.subAsset,
       day,
       originalDay: day,
-      teamId: wo.teamId ?? null,
     };
     addJob(job);
     pushToast(`${wo.name} planned for ${fullDayName(day)} ${dateNumber(day)}`, () => deleteJobAction(job.id));
@@ -163,17 +160,11 @@ export function WorkOrdersPage() {
 
         <WorkOrderList
           workOrders={workOrders}
-          teams={teams}
           onToggleStatus={(wo) => {
             toggleWorkOrderStatus(wo.id);
             pushToast(wo.status === "open" ? `${wo.name} marked complete` : `${wo.name} reopened`);
           }}
           onDelete={setDeleteTarget}
-          onTeamChange={(wo, teamId) => {
-            setWorkOrderTeam(wo.id, teamId);
-            const teamName = teamId ? teams.find((t) => t.id === teamId)?.name : null;
-            pushToast(teamName ? `${wo.name} assigned to ${teamName}` : `${wo.name} unassigned from its team`);
-          }}
         />
       </div>
 

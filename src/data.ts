@@ -19,7 +19,7 @@ export interface Job {
   subAsset?: string | null; // component within the asset
   day: string; // ISO date key yyyy-mm-dd — the day it currently sits on
   originalDay: string; // day it was first scheduled (for resolve backlog grouping)
-  teamId?: string | null; // inherited from the work order it was created from
+  teamId?: string | null; // set per job on the planner; no default, no inheritance
 }
 
 export type WorkOrderStatus = "open" | "complete";
@@ -36,7 +36,6 @@ export interface WorkOrder {
   status: WorkOrderStatus;
   source: WorkOrderSource;
   createdAt: string; // ISO
-  teamId?: string | null; // assigned team; propagates to jobs created from this work order
 }
 
 export interface TeamMember {

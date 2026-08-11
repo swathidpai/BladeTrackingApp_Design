@@ -1,10 +1,8 @@
 import { useMemo, useRef, useState } from "react";
 import { AlertTriangle, Check, ChevronLeft, FileSpreadsheet, Upload, X } from "lucide-react";
-import { Team } from "../../data";
 import { useStore } from "../../store";
 import { Button } from "../ui/Button";
 import { Dropdown } from "../ui/Dropdown";
-import { TeamDropdown } from "../ui/TeamDropdown";
 import { deriveFromFunctionalLocation } from "./deriveAsset";
 import {
   FIELD_LABELS,
@@ -32,7 +30,6 @@ const STEPS = [
 
 export function ImportWizard({ onBack, onImported }: Props) {
   const workOrders = useStore((s) => s.workOrders);
-  const teams = useStore((s) => s.teams);
   const addWorkOrders = useStore((s) => s.addWorkOrders);
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
@@ -40,7 +37,6 @@ export function ImportWizard({ onBack, onImported }: Props) {
   const [parsed, setParsed] = useState<ParsedWorkbook | null>(null);
   const [mapping, setMapping] = useState<Mapping>({});
   const [error, setError] = useState<string | null>(null);
-  const [teamId, setTeamId] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   function discardAndBack() {
@@ -81,7 +77,7 @@ export function ImportWizard({ onBack, onImported }: Props) {
 
   function confirmImport() {
     if (!preview || preview.toImport.length === 0) return;
-    const created = addWorkOrders(preview.toImport.map((r) => ({ ...previewRowToWorkOrder(r), teamId })));
+    const created = addWorkOrders(preview.toImport.map((r) => previewRowToWorkOrder(r)));
     onImported(created.length);
   }
 
@@ -139,7 +135,6 @@ export function ImportWizard({ onBack, onImported }: Props) {
                 setParsed(null);
                 setMapping({});
                 setError(null);
-                setTeamId(null);
               }}
             />
           )}
@@ -152,9 +147,7 @@ export function ImportWizard({ onBack, onImported }: Props) {
               hasDuplicateMapping={hasDuplicateMapping}
             />
           )}
-          {step === 3 && (
-            <Step3 preview={preview} teams={teams} teamId={teamId} onTeamChange={setTeamId} />
-          )}
+          {step === 3 && <Step3 preview={preview} />}
         </div>
       </div>
 
@@ -564,17 +557,7 @@ function MappingRow({
 
 /* --------------------------------------------------------------------- step 3 --- */
 
-function Step3({
-  preview,
-  teams,
-  teamId,
-  onTeamChange,
-}: {
-  preview: ImportPreview | null;
-  teams: Team[];
-  teamId: string | null;
-  onTeamChange: (id: string | null) => void;
-}) {
+function Step3({ preview }: { preview: ImportPreview | null }) {
   if (!preview) return null;
 
   return (
@@ -607,16 +590,6 @@ function Step3({
 
       {preview.toImport.length > 0 && (
         <>
-          <div className="mb-4">
-            <span className="mb-1.5 block text-[13px] font-medium text-text-primary">
-              Assign these {preview.toImport.length} work order{preview.toImport.length === 1 ? "" : "s"} to a
-              team.
-            </span>
-            <div className="max-w-xs">
-              <TeamDropdown teams={teams} value={teamId} onChange={onTeamChange} />
-            </div>
-          </div>
-
           <div className="max-h-96 overflow-auto rounded-[6px] border border-border-default scroll-slim">
             <table className="w-full text-left text-[13px]">
               <thead className="sticky top-0 bg-surface-active text-text-secondary">

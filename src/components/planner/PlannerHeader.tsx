@@ -1,13 +1,18 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Team } from "../../data";
 import { dateNumber, monthName, shortLabel } from "../../utils";
+import { TeamFilter } from "./TeamFilter";
 
 interface Props {
   days: string[];
+  teams: Team[];
+  teamFilter: string[];
+  onTeamFilterChange: (ids: string[]) => void;
   onStep: (weeks: number) => void;
   onToday: () => void;
 }
 
-export function PlannerHeader({ days, onStep, onToday }: Props) {
+export function PlannerHeader({ days, teams, teamFilter, onTeamFilterChange, onStep, onToday }: Props) {
   const first = days[0];
   const last = days[days.length - 1];
   const firstMonth = monthName(first);
@@ -52,6 +57,7 @@ export function PlannerHeader({ days, onStep, onToday }: Props) {
       </div>
 
       <div className="ml-auto flex items-center gap-3">
+        <TeamFilter teams={teams} selected={teamFilter} onChange={onTeamFilterChange} />
         <button
           type="button"
           onClick={onToday}

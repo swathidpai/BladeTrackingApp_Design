@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Calendar, Check, CheckCircle2, ChevronDown, ChevronLeft, X } from "lucide-react";
-import { Job, JobStatus, TODAY } from "../../data";
+import { Job, JobStatus, TODAY, Team } from "../../data";
 import {
   addDays,
   dateNumber,
@@ -18,6 +18,7 @@ import { ReschedulePicker } from "./ReschedulePicker";
 
 interface Props {
   jobs: Job[];
+  teams: Team[];
   onBack: () => void;
   onStatus: (job: Job, s: JobStatus) => void;
   onReschedule: (job: Job, day: string, time: string) => void;
@@ -26,6 +27,7 @@ interface Props {
   onDelete: (job: Job) => void;
   onMarkAllComplete: (day: string) => void;
   onCancelAll: (day: string) => void;
+  onTeamChange: (job: Job, teamId: string | null) => void;
 }
 
 export function ResolveScreen(props: Props) {
@@ -182,11 +184,13 @@ export function ResolveScreen(props: Props) {
                 anchor={i === 1}
                 jobs={jobs.filter((j) => j.day === day)}
                 pulseId={pulseId}
+                teams={props.teams}
                 onSetStatus={props.onSetStatus}
                 onDuplicate={props.onDuplicate}
                 onDelete={props.onDelete}
                 onMarkAllComplete={() => props.onMarkAllComplete(day)}
                 onCancelAll={() => props.onCancelAll(day)}
+                onTeamChange={props.onTeamChange}
               />
             ))
           )}
@@ -332,21 +336,25 @@ function ThreeDayColumn({
   anchor,
   jobs,
   pulseId,
+  teams,
   onSetStatus,
   onDuplicate,
   onDelete,
   onMarkAllComplete,
   onCancelAll,
+  onTeamChange,
 }: {
   day: string;
   anchor: boolean;
   jobs: Job[];
   pulseId: string | null;
+  teams: Team[];
   onSetStatus: (job: Job) => void;
   onDuplicate: (job: Job) => void;
   onDelete: (job: Job) => void;
   onMarkAllComplete: () => void;
   onCancelAll: () => void;
+  onTeamChange: (job: Job, teamId: string | null) => void;
 }) {
   const today = isToday(day);
   return (
@@ -404,9 +412,11 @@ function ThreeDayColumn({
           >
             <JobCard
               job={job}
+              teams={teams}
               onSetStatus={() => onSetStatus(job)}
               onDuplicate={() => onDuplicate(job)}
               onDelete={() => onDelete(job)}
+              onTeamChange={(teamId) => onTeamChange(job, teamId)}
             />
           </div>
         ))}

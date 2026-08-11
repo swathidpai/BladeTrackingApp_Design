@@ -13,7 +13,7 @@ import {
 } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
 import { ASSETS, Job, JobStatus, SUB_ASSETS, nextId } from "./data";
-import { fullDayName, dateNumber, monthName, needsAttention, weekWindow } from "./utils";
+import { fullDayName, dateNumber, matchesTeamFilter, monthName, needsAttention, weekWindow } from "./utils";
 import { useStore } from "./store";
 import { NavRail } from "./components/layout/NavRail";
 import { TopBar } from "./components/layout/TopBar";
@@ -43,6 +43,9 @@ export default function App() {
   const navigate = useNavigate();
   const jobs = useStore((s) => s.jobs);
   const setJobs = useStore((s) => s.setJobs);
+  const teams = useStore((s) => s.teams);
+  const teamFilter = useStore((s) => s.plannerTeamFilter);
+  const setTeamFilter = useStore((s) => s.setPlannerTeamFilter);
   const setWorkOrderStatusByNumber = useStore((s) => s.setWorkOrderStatusByNumber);
   const [weekOffset, setWeekOffset] = useState(0);
   const weekDays = useMemo(() => weekWindow(weekOffset), [weekOffset]);
@@ -70,6 +73,10 @@ export default function App() {
   // ---- Job mutations ----
   function updateJob(id: string, patch: Partial<Job>) {
     setJobs((prev) => prev.map((j) => (j.id === id ? { ...j, ...patch } : j)));
+  }
+
+  function setJobTeam(job: Job, teamId: string | null) {
+    updateJob(job.id, { teamId });
   }
 
   function handleStatus(job: Job, status: JobStatus) {
@@ -242,6 +249,9 @@ export default function App() {
               >
                 <PlannerHeader
                   days={weekDays}
+                  teams={teams}
+                  teamFilter={teamFilter}
+                  onTeamFilterChange={setTeamFilter}
                   onStep={(weeks) => setWeekOffset((o) => o + weeks)}
                   onToday={() => setWeekOffset(0)}
                 />
@@ -252,8 +262,9 @@ export default function App() {
                     <DayColumn
                       key={day}
                       dayKey={day}
-                      jobs={jobs.filter((j) => j.day === day)}
+                      jobs={jobs.filter((j) => j.day === day && matchesTeamFilter(j, teamFilter))}
                       activeId={activeId}
+                      teams={teams}
                       onAddJob={(d) => setJobModal({ day: d })}
                       onMarkAllComplete={(d) => setDayModal({ day: d, mode: "complete" })}
                       onCancelAll={(d) => setDayModal({ day: d, mode: "cancel" })}
@@ -262,6 +273,7 @@ export default function App() {
                       onDelete={deleteJob}
                       onReasonClick={(job) => setStatusModal({ job })}
                       onLinkWorkOrder={(job) => setJobModal({ day: job.day, job })}
+                      onTeamChange={setJobTeam}
                     />
                   ))}
                 </div>
@@ -271,6 +283,7 @@ export default function App() {
                     <div className="rotate-2 opacity-95 shadow-2xl">
                       <JobCard
                         job={activeJob}
+                        teams={teams}
                         onSetStatus={() => {}}
                         onDuplicate={() => {}}
                         onDelete={() => {}}
@@ -286,6 +299,7 @@ export default function App() {
             element={
               <ResolveScreen
                 jobs={jobs}
+                teams={teams}
                 onBack={() => navigate("/planner")}
                 onStatus={handleStatus}
                 onSetStatus={(job) => setStatusModal({ job })}
@@ -293,6 +307,7 @@ export default function App() {
                 onDelete={deleteJob}
                 onMarkAllComplete={(d) => setDayModal({ day: d, mode: "complete" })}
                 onCancelAll={(d) => setDayModal({ day: d, mode: "cancel" })}
+                onTeamChange={setJobTeam}
                 onReschedule={(job, day, time) => {
                   const snap = jobs;
                   updateJob(job.id, { day });

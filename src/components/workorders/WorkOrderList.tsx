@@ -1,9 +1,8 @@
 import { useMemo, useState } from "react";
 import { GripVertical, Search, Trash2 } from "lucide-react";
 import { useDraggable } from "@dnd-kit/core";
-import { Team, WorkOrder } from "../../data";
+import { WorkOrder } from "../../data";
 import { Dropdown } from "../ui/Dropdown";
-import { TeamDropdown } from "../ui/TeamDropdown";
 
 export const LIST_ROW_PREFIX = "wo-row-";
 
@@ -11,13 +10,11 @@ type StatusFilter = "open" | "complete" | "all";
 
 interface Props {
   workOrders: WorkOrder[];
-  teams: Team[];
   onToggleStatus: (wo: WorkOrder) => void;
   onDelete: (wo: WorkOrder) => void;
-  onTeamChange: (wo: WorkOrder, teamId: string | null) => void;
 }
 
-export function WorkOrderList({ workOrders, teams, onToggleStatus, onDelete, onTeamChange }: Props) {
+export function WorkOrderList({ workOrders, onToggleStatus, onDelete }: Props) {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<StatusFilter>("open");
 
@@ -83,21 +80,13 @@ export function WorkOrderList({ workOrders, teams, onToggleStatus, onDelete, onT
                 <th className="py-2 font-medium">Functional Location</th>
                 <th className="py-2 font-medium">Asset</th>
                 <th className="py-2 font-medium">Sub-Asset</th>
-                <th className="py-2 font-medium">Team</th>
                 <th className="py-2 font-medium" />
                 <th className="w-8 py-2" />
               </tr>
             </thead>
             <tbody>
               {filtered.map((wo) => (
-                <Row
-                  key={wo.id}
-                  wo={wo}
-                  teams={teams}
-                  onToggleStatus={onToggleStatus}
-                  onDelete={onDelete}
-                  onTeamChange={onTeamChange}
-                />
+                <Row key={wo.id} wo={wo} onToggleStatus={onToggleStatus} onDelete={onDelete} />
               ))}
             </tbody>
           </table>
@@ -109,16 +98,12 @@ export function WorkOrderList({ workOrders, teams, onToggleStatus, onDelete, onT
 
 function Row({
   wo,
-  teams,
   onToggleStatus,
   onDelete,
-  onTeamChange,
 }: {
   wo: WorkOrder;
-  teams: Team[];
   onToggleStatus: (wo: WorkOrder) => void;
   onDelete: (wo: WorkOrder) => void;
-  onTeamChange: (wo: WorkOrder, teamId: string | null) => void;
 }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `${LIST_ROW_PREFIX}${wo.id}`,
@@ -148,14 +133,6 @@ function Row({
       <td className="py-3 pr-3 text-text-secondary">{wo.functionalLocation || "—"}</td>
       <td className="py-3 pr-3 text-text-secondary">{wo.asset || "—"}</td>
       <td className="py-3 pr-3 text-text-secondary">{wo.subAsset || "—"}</td>
-      <td className="py-3 pr-3">
-        <TeamDropdown
-          teams={teams}
-          value={wo.teamId ?? null}
-          onChange={(teamId) => onTeamChange(wo, teamId)}
-          compact
-        />
-      </td>
       <td className="py-3 pr-3">
         <button
           type="button"

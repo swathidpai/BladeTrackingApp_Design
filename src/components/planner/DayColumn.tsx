@@ -1,7 +1,7 @@
 import { Check, Plus, X } from "lucide-react";
 import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import { Job } from "../../data";
+import { Job, Team } from "../../data";
 import { dateNumber, dayName, isPast, isToday, isWeekend } from "../../utils";
 import { SortableJobCard } from "./SortableJobCard";
 import { Tooltip } from "../ui/Tooltip";
@@ -11,6 +11,7 @@ interface Props {
   jobs: Job[];
   activeId: string | null;
   isOver?: boolean;
+  teams: Team[];
   onAddJob: (day: string) => void;
   onMarkAllComplete: (day: string) => void;
   onCancelAll: (day: string) => void;
@@ -19,12 +20,14 @@ interface Props {
   onDelete: (job: Job) => void;
   onReasonClick: (job: Job) => void;
   onLinkWorkOrder: (job: Job) => void;
+  onTeamChange: (job: Job, teamId: string | null) => void;
 }
 
 export function DayColumn({
   dayKey,
   jobs,
   activeId,
+  teams,
   onAddJob,
   onMarkAllComplete,
   onCancelAll,
@@ -33,6 +36,7 @@ export function DayColumn({
   onDelete,
   onReasonClick,
   onLinkWorkOrder,
+  onTeamChange,
 }: Props) {
   const today = isToday(dayKey);
   const past = isPast(dayKey);
@@ -107,11 +111,13 @@ export function DayColumn({
               job={job}
               containerId={dayKey}
               activeId={activeId}
+              teams={teams}
               onSetStatus={() => onSetStatus(job)}
               onDuplicate={() => onDuplicate(job)}
               onDelete={() => onDelete(job)}
               onReasonClick={() => onReasonClick(job)}
               onLinkWorkOrder={() => onLinkWorkOrder(job)}
+              onTeamChange={(teamId) => onTeamChange(job, teamId)}
             />
           ))}
         </SortableContext>

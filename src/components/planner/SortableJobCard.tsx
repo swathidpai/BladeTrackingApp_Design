@@ -1,6 +1,6 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Job } from "../../data";
+import { Job, Team } from "../../data";
 import { JobCard } from "./JobCard";
 
 interface Props {
@@ -10,6 +10,8 @@ interface Props {
   fullWidth?: boolean;
   showHandle?: boolean;
   inlineMissing?: boolean;
+  teams?: Team[];
+  onTeamChange?: (teamId: string | null) => void;
   onSetStatus: () => void;
   onDuplicate: () => void;
   onDelete: () => void;

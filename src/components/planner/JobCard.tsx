@@ -8,9 +8,10 @@ import {
   ClipboardList,
   Plus,
 } from "lucide-react";
-import { Job } from "../../data";
+import { Job, Team } from "../../data";
 import { attentionReason, missingFields, needsAttention } from "../../utils";
 import { TypeTag } from "../ui/Pill";
+import { TeamPicker } from "../ui/TeamPicker";
 import { Tooltip } from "../ui/Tooltip";
 
 interface Props {
@@ -20,6 +21,8 @@ interface Props {
   onDelete: () => void;
   onReasonClick?: () => void;
   onLinkWorkOrder?: () => void;
+  teams?: Team[];
+  onTeamChange?: (teamId: string | null) => void;
   fullWidth?: boolean;
   handleProps?: Record<string, unknown>; // drag handle listeners/attributes
   showHandle?: boolean; // always-visible handle (resolve backlog)
@@ -67,6 +70,8 @@ export function JobCard({
   onDelete,
   onReasonClick,
   onLinkWorkOrder,
+  teams = [],
+  onTeamChange,
   fullWidth,
   handleProps,
   showHandle,
@@ -78,6 +83,7 @@ export function JobCard({
   const missing = missingFields(job);
   const status = statusControl(job);
   const StatusIcon = status.icon;
+  const team = job.teamId ? teams.find((t) => t.id === job.teamId) : undefined;
 
   return (
     <div
@@ -85,6 +91,14 @@ export function JobCard({
         dimmed ? "opacity-40" : ""
       } ${fullWidth ? "w-full" : ""}`}
     >
+      {/* Team stripe — quiet left-edge indicator, nothing heavier */}
+      {team && (
+        <span
+          className="absolute inset-y-0 left-0 w-[3px] rounded-l-[6px]"
+          style={{ backgroundColor: team.color }}
+        />
+      )}
+
       {/* Attention badge */}
       {attention && (
         <Tooltip label={attentionReason(job)}>
@@ -170,6 +184,9 @@ export function JobCard({
           </button>
         </Tooltip>
         <div className="flex items-center gap-1">
+          {onTeamChange && (
+            <TeamPicker teams={teams} value={job.teamId ?? null} onChange={onTeamChange} variant="icon" />
+          )}
           <IconAction label="Duplicate" onClick={onDuplicate}>
             <Copy size={15} />
           </IconAction>
