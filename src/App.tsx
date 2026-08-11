@@ -13,7 +13,15 @@ import {
 } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
 import { ASSETS, Job, JobStatus, SUB_ASSETS, nextId } from "./data";
-import { fullDayName, dateNumber, matchesTeamFilter, monthName, needsAttention, weekWindow } from "./utils";
+import {
+  fullDayName,
+  dateNumber,
+  matchesJobTypeFilter,
+  matchesTeamFilter,
+  monthName,
+  needsAttention,
+  weekWindow,
+} from "./utils";
 import { useStore } from "./store";
 import { NavRail } from "./components/layout/NavRail";
 import { TopBar } from "./components/layout/TopBar";
@@ -46,6 +54,9 @@ export default function App() {
   const teams = useStore((s) => s.teams);
   const teamFilter = useStore((s) => s.plannerTeamFilter);
   const setTeamFilter = useStore((s) => s.setPlannerTeamFilter);
+  const jobTypes = useStore((s) => s.jobTypes);
+  const jobTypeFilter = useStore((s) => s.plannerJobTypeFilter);
+  const setJobTypeFilter = useStore((s) => s.setPlannerJobTypeFilter);
   const setWorkOrderStatusByNumber = useStore((s) => s.setWorkOrderStatusByNumber);
   const [weekOffset, setWeekOffset] = useState(0);
   const weekDays = useMemo(() => weekWindow(weekOffset), [weekOffset]);
@@ -252,6 +263,9 @@ export default function App() {
                   teams={teams}
                   teamFilter={teamFilter}
                   onTeamFilterChange={setTeamFilter}
+                  jobTypes={jobTypes}
+                  jobTypeFilter={jobTypeFilter}
+                  onJobTypeFilterChange={setJobTypeFilter}
                   onStep={(weeks) => setWeekOffset((o) => o + weeks)}
                   onToday={() => setWeekOffset(0)}
                 />
@@ -262,7 +276,12 @@ export default function App() {
                     <DayColumn
                       key={day}
                       dayKey={day}
-                      jobs={jobs.filter((j) => j.day === day && matchesTeamFilter(j, teamFilter))}
+                      jobs={jobs.filter(
+                        (j) =>
+                          j.day === day &&
+                          matchesTeamFilter(j, teamFilter) &&
+                          matchesJobTypeFilter(j, jobTypeFilter),
+                      )}
                       activeId={activeId}
                       teams={teams}
                       onAddJob={(d) => setJobModal({ day: d })}

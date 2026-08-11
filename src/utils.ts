@@ -103,3 +103,9 @@ export function matchesTeamFilter(job: Job, selected: string[]): boolean {
   if (selected.length === 0) return true;
   return job.teamId ? selected.includes(job.teamId) : selected.includes(NO_TEAM_FILTER_ID);
 }
+
+/** A job matches an empty selection (all types) or one that includes its job type name. */
+export function matchesJobTypeFilter(job: Job, selected: string[]): boolean {
+  if (selected.length === 0) return true;
+  return selected.includes(job.type);
+}

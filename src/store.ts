@@ -25,6 +25,8 @@ interface Store {
   teams: Team[];
   /** Planner Team filter selection — team ids (plus the "no team" sentinel); empty means all teams. Persisted. */
   plannerTeamFilter: string[];
+  /** Planner Job type filter selection — job type names; empty means all types. Persisted. */
+  plannerJobTypeFilter: string[];
 
   setJobs: (updater: Job[] | ((prev: Job[]) => Job[])) => void;
   updateJob: (id: string, patch: Partial<Job>) => void;
@@ -56,6 +58,7 @@ interface Store {
   deleteTeam: (id: string) => void;
 
   setPlannerTeamFilter: (ids: string[]) => void;
+  setPlannerJobTypeFilter: (names: string[]) => void;
 }
 
 export const useStore = create<Store>()(
@@ -67,6 +70,7 @@ export const useStore = create<Store>()(
       cancellationReasons: SEED_CANCELLATION_REASONS,
       teams: SEED_TEAMS,
       plannerTeamFilter: [],
+      plannerJobTypeFilter: [],
 
       setJobs: (updater) =>
         set((s) => ({ jobs: typeof updater === "function" ? updater(s.jobs) : updater })),
@@ -149,6 +153,7 @@ export const useStore = create<Store>()(
         })),
 
       setPlannerTeamFilter: (ids) => set({ plannerTeamFilter: ids }),
+      setPlannerJobTypeFilter: (names) => set({ plannerJobTypeFilter: names }),
     }),
     { name: "windai-blade-tracking" },
   ),
