@@ -1,7 +1,11 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Check, ChevronDown, Users } from "lucide-react";
 import { Team } from "../../data";
 import { NO_TEAM_FILTER_ID } from "../../utils";
+import { useAnchoredPosition } from "../../hooks/useAnchoredPosition";
+
+const PANEL_WIDTH = 224; // w-56
 
 interface Props {
   teams: Team[];
@@ -12,6 +16,7 @@ interface Props {
 export function TeamFilter({ teams, selected, onChange }: Props) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const pos = useAnchoredPosition(ref, open, PANEL_WIDTH, "right");
 
   useEffect(() => {
     function onDoc(e: MouseEvent) {
@@ -55,45 +60,52 @@ export function TeamFilter({ teams, selected, onChange }: Props) {
         <ChevronDown size={14} />
       </button>
 
-      {open && (
-        <div className="absolute right-0 z-40 mt-1.5 w-56 rounded-[8px] border border-border-strong bg-surface-raised p-2 shadow-2xl">
-          <div className="mb-1 flex items-center justify-between px-1">
-            <span className="text-[13px] font-medium text-text-primary">Team</span>
-            {selected.length > 0 && (
+      {open &&
+        createPortal(
+          <div
+            onClick={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
+            style={{ position: "fixed", top: pos.top, left: pos.left, width: PANEL_WIDTH }}
+            className="z-50 rounded-[8px] border border-border-strong bg-surface-raised p-2 shadow-2xl"
+          >
+            <div className="mb-1 flex items-center justify-between px-1">
+              <span className="text-[13px] font-medium text-text-primary">Team</span>
+              {selected.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => onChange([])}
+                  className="text-[12px] text-accent-primary transition hover:brightness-110"
+                >
+                  All teams
+                </button>
+              )}
+            </div>
+            <div className="max-h-64 space-y-0.5 overflow-y-auto scroll-slim">
               <button
                 type="button"
-                onClick={() => onChange([])}
-                className="text-[12px] text-accent-primary transition hover:brightness-110"
-              >
-                All teams
-              </button>
-            )}
-          </div>
-          <div className="max-h-64 space-y-0.5 overflow-y-auto scroll-slim">
-            <button
-              type="button"
-              onClick={() => toggle(NO_TEAM_FILTER_ID)}
-              className="flex w-full items-center gap-2 rounded-[4px] px-2 py-1.5 text-left text-[13px] transition hover:bg-surface-active"
-            >
-              <span className="h-1.5 w-1.5 shrink-0 rounded-full border border-border-strong" />
-              <span className="flex-1 truncate text-text-primary">No team</span>
-              {selected.includes(NO_TEAM_FILTER_ID) && <Check size={13} className="text-accent-primary" />}
-            </button>
-            {teams.map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => toggle(t.id)}
+                onClick={() => toggle(NO_TEAM_FILTER_ID)}
                 className="flex w-full items-center gap-2 rounded-[4px] px-2 py-1.5 text-left text-[13px] transition hover:bg-surface-active"
               >
-                <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: t.color }} />
-                <span className="flex-1 truncate text-text-primary">{t.name}</span>
-                {selected.includes(t.id) && <Check size={13} className="text-accent-primary" />}
+                <span className="h-1.5 w-1.5 shrink-0 rounded-full border border-border-strong" />
+                <span className="flex-1 truncate text-text-primary">No team</span>
+                {selected.includes(NO_TEAM_FILTER_ID) && <Check size={13} className="text-accent-primary" />}
               </button>
-            ))}
-          </div>
-        </div>
-      )}
+              {teams.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => toggle(t.id)}
+                  className="flex w-full items-center gap-2 rounded-[4px] px-2 py-1.5 text-left text-[13px] transition hover:bg-surface-active"
+                >
+                  <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: t.color }} />
+                  <span className="flex-1 truncate text-text-primary">{t.name}</span>
+                  {selected.includes(t.id) && <Check size={13} className="text-accent-primary" />}
+                </button>
+              ))}
+            </div>
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }
