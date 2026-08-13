@@ -19,7 +19,6 @@ export interface Job {
   subAsset?: string | null; // component within the asset
   day: string; // ISO date key yyyy-mm-dd — the day it currently sits on
   originalDay: string; // day it was first scheduled (for resolve backlog grouping)
-  teamId?: string; // inherited from the work order it was planned from
 }
 
 export type WorkOrderStatus = "open" | "complete";
@@ -36,7 +35,6 @@ export interface WorkOrder {
   status: WorkOrderStatus;
   source: WorkOrderSource;
   createdAt: string; // ISO
-  teamId?: string;
 }
 
 /** Best-effort guess at a work order's job type from its name, for the linker match. */
@@ -214,79 +212,6 @@ export const SEED_CANCELLATION_REASONS: CancellationReasonDef[] = [
   },
 ];
 
-export interface TeamMember {
-  email: string;
-  name: string; // editable; looked up from email, or derived if no directory match
-}
-
-/** A team as configured in Settings — assignable to work orders, which propagate it to their jobs. */
-export interface Team {
-  id: string;
-  name: string;
-  key?: string; // optional slug/unique id, auto-filled from the name, editable
-  color: string;
-  description?: string;
-  members: TeamMember[];
-  createdAt: string;
-}
-
-/**
- * Best-effort display name from an email's local part, used when a member is
- * added and no real user directory is wired up (`dave.fell@rwe.com` → "Dave Fell").
- * Follow-up: replace with a real user-directory lookup.
- */
-export function nameFromEmail(email: string): string {
-  const local = email.split("@")[0] ?? "";
-  const words = local.split(/[._-]+/).filter(Boolean);
-  if (words.length === 0) return email;
-  return words.map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
-}
-
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-export function isValidEmail(email: string): boolean {
-  return EMAIL_RE.test(email.trim());
-}
-
-let teamN = 0;
-const teamUid = () => `team-seed-${++teamN}`;
-
-export const SEED_TEAMS: Team[] = [
-  {
-    id: teamUid(),
-    name: "Alpha Rope Access",
-    key: "ALPHA_ROPE_ACCESS",
-    color: "#84B8FF",
-    description: "Rope access crew for structural and laminate blade repairs.",
-    members: [
-      { email: "dave.fell@rwe.com", name: "Dave Fell" },
-      { email: "maria.santos@rwe.com", name: "Maria Santos" },
-      { email: "james.okoro@rwe.com", name: "James Okoro" },
-    ],
-    createdAt: "2025-07-10T09:00:00.000Z",
-  },
-  {
-    id: teamUid(),
-    name: "Coatings Crew",
-    key: "COATINGS_CREW",
-    color: "#A78BFA",
-    description: "Leading-edge protection, recoating and paint work.",
-    members: [
-      { email: "priya.nair@rwe.com", name: "Priya Nair" },
-      { email: "tom.bakker@rwe.com", name: "Tom Bakker" },
-    ],
-    createdAt: "2025-07-11T09:00:00.000Z",
-  },
-  {
-    id: teamUid(),
-    name: "Tower & BOP Team",
-    key: "TOWER_BOP_TEAM",
-    color: "#34D399",
-    description: "Tower cleaning, inspection and balance-of-plant work.",
-    members: [{ email: "sofia.lindqvist@rwe.com", name: "Sofia Lindqvist" }],
-    createdAt: "2025-07-12T09:00:00.000Z",
-  },
-];
-
 let woN = 0;
 const woUid = () => `wo-seed-${++woN}`;
 
@@ -447,8 +372,4 @@ export function nextJobTypeId() {
 
 export function nextCancellationReasonId() {
   return uniqueId("cr");
-}
-
-export function nextTeamId() {
-  return uniqueId("team");
 }
